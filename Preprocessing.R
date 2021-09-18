@@ -1,0 +1,33 @@
+#####################################
+##            MVA LAB              ##
+#####################################
+
+rm(list=ls(all=TRUE))
+
+library(rstudioapi)
+library(tibble)
+library(dplyr)
+
+current_path <- getActiveDocumentContext()$path 
+setwd(dirname(current_path ))
+
+bikeDataSet <- read.csv("SeoulBikeData.csv",header=T, sep=",")
+
+n <- nrow(bikeDataSet)
+
+Id = c(1:n)
+
+new_bikeDataSet <- add_column(bikeDataSet, Id, .before=1)
+
+
+#random_seed <- sample(1:10000, 1)
+random_seed <- (266L)
+
+set.seed(random_seed)
+subSet <- new_bikeDataSet %>% sample_n(5, replace= FALSE)
+
+
+# Using filter (with the same Random Id obtained before)
+sample <- c(2600,2682,5880,5975,8096)
+subSet2 <- new_bikeDataSet %>% filter(Id %in% sample)
+
