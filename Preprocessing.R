@@ -27,7 +27,8 @@ new_bikeDataSet <- add_column(bikeDataSet, Id, .before=1)
 
 ## WRITING NEW DATASET ##
 
-write.table(new_bikeDataSet, file = "SeoulBikeData.csv", sep = ",", na = "NA", dec = ".", row.names = FALSE, col.names = TRUE)
+write.table(new_bikeDataSet, file = "SeoulBikeData.csv", quote = FALSE, 
+            sep = ",", na = "NA", dec = ".", row.names = FALSE, col.names = TRUE)
 
 
 ## GENERATING RANDOM SAMPLE ##
