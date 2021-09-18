@@ -4,14 +4,20 @@
 
 rm(list=ls(all=TRUE))
 
+## IMPORTS ##
+
 library(rstudioapi)
 library(tibble)
 library(dplyr)
 
+## SETTING WORKSPACE ##
+
 current_path <- getActiveDocumentContext()$path 
 setwd(dirname(current_path ))
 
-bikeDataSet <- read.csv("SeoulBikeData.csv",header=T, sep=",")
+## GETTING DATASET AND GENERATING ID COLUMN ##
+
+bikeDataSet <- read.csv("SeoulBikeDataOriginal.csv",header=T, sep=",")
 
 n <- nrow(bikeDataSet)
 
@@ -19,6 +25,12 @@ Id = c(1:n)
 
 new_bikeDataSet <- add_column(bikeDataSet, Id, .before=1)
 
+## WRITING NEW DATASET ##
+
+write.table(new_bikeDataSet, file = "SeoulBikeData.csv", sep = ",", na = "NA", dec = ".", row.names = FALSE, col.names = TRUE)
+
+
+## GENERATING RANDOM SAMPLE ##
 
 #random_seed <- sample(1:10000, 1)
 random_seed <- (266L)
