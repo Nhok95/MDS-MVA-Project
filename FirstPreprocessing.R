@@ -2,6 +2,12 @@
 ##            MVA LAB              ##
 #####################################
 
+
+### !IMPORTANT###
+### Split our date (ex:01/03/2021) into 3 columns (day, month, years)
+
+## Clustering project -> Functioning Day / Hour / Season
+
 rm(list=ls(all=TRUE))
 
 ## IMPORTS ##
@@ -43,4 +49,3 @@ subSet <- new_bikeDataSet %>% sample_n(5, replace= FALSE)
 # Using filter (with the same Random Id obtained before)
 sample <- c(2600,2682,5880,5975,8096)
 subSet2 <- new_bikeDataSet %>% filter(Id %in% sample)
-
