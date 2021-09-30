@@ -36,7 +36,7 @@ which(is.na(bikeDataSet))
 head(bikeDataSet)
 describe(bikeDataSet) # so cool!
 
-seasons <- c("Spring", "Summner", "Autumn", "Winter")
+seasons <- c("Spring", "Summer", "Autumn", "Winter")
 hours <- 1:24
 holiday_values <- c("Holiday", "No Holiday")
 feature_names <- c("Temperature", "Humidity", "Wind.Speed", "Visibility", "Dew.Point.Temperature", "Solar.Radiation", "Rainfall", "Snowfall")
