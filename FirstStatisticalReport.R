@@ -49,11 +49,9 @@ bikeDataSet[m1,] # 0 rows
 #table(mis_ind)
 
 
-
-
 # No NAs 
 
-## Categorical data treatment [Date, Hour, Seasons]
+## Categorical data treatment [Date, Hour, Season]
 
 ## Simple ##
 day_levels = levels(as.factor(bikeDataSet$Date)); day_levels
@@ -70,21 +68,18 @@ date_table[date_table != 24] #less or more than 24 hours per day -> 0 results
 table(bikeDataSet$Hour)
 
 
-
-
-
 ### Outliers ###
 
 
-#ds = filter(bikeDataSet, Seasons == "Winter")
+#ds = filter(bikeDataSet, Season == "Winter")
 
-ds_original = bikeDataSet[which(bikeDataSet$Seasons == "Winter"),]
+ds_original = bikeDataSet[which(bikeDataSet$Season == "Winter"),]
 ds = ds_original[,c(3,5:12)]
 
 
-X_Summer = filter(new_bikeDataSet, Seasons == "Summer")
-X_Spring = filter(new_bikeDataSet, Seasons == "Spring")
-X_Autumn = filter(new_bikeDataSet, Seasons == "Autumn")
+X_Summer = filter(new_bikeDataSet, Season == "Summer")
+X_Spring = filter(new_bikeDataSet, Season == "Spring")
+X_Autumn = filter(new_bikeDataSet, Season == "Autumn")
 X = X_Summer[,c(3,5:12)]
 X = X_Spring[,c(3,5:12)]
 X = X_Autumn[,c(3,5:12)]
@@ -92,11 +87,11 @@ X = X_Autumn[,c(3,5:12)]
 names(ds)
 
 #boxplot(X, ylim=c(0,40))
-#boxplot(X$Rented.Bike.Count ~ X$Seasons) # Autumn ~ Spring; Summer; Winter
+#boxplot(X$Rented.Bike.Count ~ X$Season) # Autumn ~ Spring; Summer; Winter
 
 boxplot(ds)
 #Example
-boxplot(ds$Temperature..C., 
+boxplot(ds$Temperature, 
         main="Temperature in Celsius (Winter)", 
         xlab="Degrees",
         ylab="Temperature",
@@ -108,19 +103,19 @@ boxplot(ds$Temperature..C.,
 
 
 
-boxplot(ds$Humidity...)
-boxplot(ds$Wind.speed..m.s.)
-boxplot(ds$Visibility..10m.)
-boxplot(ds$Dew.point.temperature..C.)
-boxplot(ds$Solar.Radiation..MJ.m2.)
-boxplot(ds$Rainfall.mm.)
-boxplot(ds$Snowfall..cm.)
+boxplot(ds$Humidity)
+boxplot(ds$Wind.Speed)
+boxplot(ds$Visibility)
+boxplot(ds$Dew.Point.Temperature)
+boxplot(ds$Solar.Radiation)
+boxplot(ds$Rainfall)
+boxplot(ds$Snowfall)
 
 # outliers indexs example
-outliers_values = boxplot.stats(ds$Temperature..C.)$out
-ds_outliers_index = ds_original$Id[ds$Temperature..C. == outliers_values]
+outliers_values = boxplot.stats(ds$Temperature)$out
+ds_outliers_index = ds_original$Id[ds$Temperature == outliers_values]
 
-hist(ds$Temperature..C., 
+hist(ds$Temperature, 
      xlim=c(-20,15),
      breaks = 100)
 
