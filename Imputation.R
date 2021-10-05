@@ -183,6 +183,10 @@ diff.df = as.data.frame(t(diff.df))
 diff.df.2 = data.frame(diff1.2,diff2.2, row.names=cnames)
 diff.df.2 = as.data.frame(t(diff.df.2))
 
+
+write.table(bikeDS_imp2, file = "SeoulBikeData_FirstImp.csv", quote = FALSE, 
+            sep = ",", na = "NA", dec = ".", row.names = FALSE, col.names = TRUE)
+
 #########################################################
 for (j in c(1:ncol(winter_outliers))) {
   
