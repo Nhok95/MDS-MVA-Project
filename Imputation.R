@@ -79,9 +79,8 @@ length(which(is.na(bikeDataSet))) # Total: 248 NAs
 str(bikeDataSet)
 
 
-
 ### First data imputation with MICE ###
-checkMeanDiff = function(original, bikeDS_imp, bikeDataSet) {
+checkDiff = function(original, bikeDS_imp, bikeDataSet, meanBool="T") {
   diff = c()
   cnames = colnames(original[c(6,8,9,10,11,12,13,14)])
   
@@ -90,10 +89,19 @@ checkMeanDiff = function(original, bikeDS_imp, bikeDataSet) {
     predicted = bikeDS_imp[,cnames[i]][is.na(bikeDataSet[,cnames[i]])]
     print("###")
     print(sprintf("--column: %s", cnames[i]))
-    print(mean(actual))
-    print(mean(predicted))
     
-    diff = append(diff,mean(actual) - mean(predicted))
+    if (meanBool) {
+      print(mean(actual))
+      print(mean(predicted))
+      
+      diff = append(diff,mean(actual) - mean(predicted))  
+    } else {
+      print(var(actual))
+      print(var(predicted))
+      
+      diff = append(diff,var(actual) - var(predicted)) 
+    }
+    
     
     print(sprintf("----diff: %s ", diff[i]))
   }
@@ -101,7 +109,7 @@ checkMeanDiff = function(original, bikeDS_imp, bikeDataSet) {
   return(diff)
 }
 
-checkMeanDiff2 = function(original, bikeDS_imp) {
+checkDiff2 = function(original, bikeDS_imp, meanBool="T") {
   diff = c()
   cnames = colnames(original[c(6,8,9,10,11,12,13,14)])
   
@@ -110,10 +118,22 @@ checkMeanDiff2 = function(original, bikeDS_imp) {
     predicted = bikeDS_imp[,cnames[i]]
     print("###")
     print(sprintf("--column: %s", cnames[i]))
-    print(mean(actual))
-    print(mean(predicted))
     
-    diff = append(diff,mean(actual, na.rm=T) - mean(predicted, na.rm=T))
+    if (meanBool) {
+      print("Mean")
+      print(mean(actual))
+      print(mean(predicted))
+      
+      diff = append(diff, abs(mean(actual, na.rm=T) - mean(predicted, na.rm=T)))
+    } else {
+      print("Var")
+      print(var(actual))
+      print(var(predicted))
+      
+      diff = append(diff, abs(var(actual, na.rm=T) - var(predicted, na.rm=T)))
+    }
+    
+    
     
     print(sprintf("----diff: %s ", diff[i]))
   }
@@ -121,13 +141,19 @@ checkMeanDiff2 = function(original, bikeDS_imp) {
   return(diff)
 }
 
-imp=mice(bikeDataSet,m=5)
-bikeDS_imp=complete(imp)
+cnames = colnames(original[c(6,8,9,10,11,12,13,14)])
+
+imp1=mice(bikeDataSet,m=25, maxit = 100)
+bikeDS_imp=complete(imp1)
 length(which(is.na(bikeDS_imp)))
 
+plot(imp1)
+densityplot(imp1)
+#stripplot(imp, pch = 20, cex = 2)
 
-diff1 = checkMeanDiff(original, bikeDS_imp, bikeDataSet)
-diff1.2 = checkMeanDiff2(original, bikeDS_imp)
+#diff1 = checkMeanDiff(original, bikeDS_imp, bikeDataSet, TRUE)
+diff1.mean = checkDiff2(original, bikeDS_imp, TRUE)
+diff1.var = checkDiff2(original, bikeDS_imp, FALSE)
 
 
 
@@ -148,8 +174,8 @@ predM[,c("Id")]=0
 #predM[c("Year"),]=0
 #predM[,c("Year")]=0
 
-#predM[c("Date"),]=0
-#predM[,c("Date")]=0
+predM[c("Date"),]=0
+predM[,c("Date")]=0
 
 #meth[c("Rented.Bike.Count")]="norm"
 #meth[c("Temperature")]="norm"
@@ -161,48 +187,28 @@ predM[,c("Id")]=0
 #meth[c("Rainfall")]="norm"
 
 
-predM; meth
+#predM; meth
 
-k = 5
-imp=mice(bikeDataSet,m=k, method=meth, predictorMatrix = predM)
+imp2=mice(bikeDataSet,m=25, maxit = 100, method=meth, predictorMatrix = predM)
+bikeDS_imp2=complete(imp2)
+length(which(is.na(bikeDS_imp2)))
 
-bikeDS_imp2=complete(imp)
+plot(imp2)
+densityplot(imp2)
 
-diff2 = checkMeanDiff(original, bikeDS_imp2, bikeDataSet)
-diff2.2 = checkMeanDiff2(original, bikeDS_imp2)
 
-diff1
-diff2
+diff2.mean = checkDiff2(original, bikeDS_imp2, TRUE)
+diff2.var = checkDiff2(original, bikeDS_imp2, FALSE)
 
-diff1.2
-diff2.2
+diff.df.mean = data.frame(diff1.mean,diff2.mean, row.names=cnames)
+diff.df.mean = as.data.frame(t(diff.df.mean))
 
-diff.df = data.frame(diff1,diff2, row.names=cnames)
-diff.df = as.data.frame(t(diff.df))
-
-diff.df.2 = data.frame(diff1.2,diff2.2, row.names=cnames)
-diff.df.2 = as.data.frame(t(diff.df.2))
+diff.df.var = data.frame(diff1.var,diff2.var, row.names=cnames)
+diff.df.var = as.data.frame(t(diff.df.var))
 
 
 write.table(bikeDS_imp2, file = "SeoulBikeData_FirstImp.csv", quote = FALSE, 
             sep = ",", na = "NA", dec = ".", row.names = FALSE, col.names = TRUE)
 
-#########################################################
-for (j in c(1:ncol(winter_outliers))) {
-  
-  column = colnames(winter_outliers)[j]
-  print(sprintf("For column: %s", column))
-  
-  
-  for (i in c(1:nrow(winter_outliers))) {
-    id = winter_outliers[i,j]
-    print(sprintf("--ID: %s", id))
-    if (!is.na(id)) {
-      print(sprintf("----bikeDataSet[%s,%s] = %s now is NA", id, column, bikeDataSet[id,column]))
-      #bikeDataSet[id,column] <- NA
-    }
-  }
-  
-}
 
 
