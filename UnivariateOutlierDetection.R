@@ -2,8 +2,6 @@
 ##            MVA LAB              ##
 #####################################
 
-# This script does not find outliers in Summer. We need to check if that's true.
-
 rm(list=ls(all=TRUE))
 
 ## IMPORTS ##
@@ -13,6 +11,9 @@ library(tibble)
 library(dplyr)
 library(data.table)
 library(Hmisc)
+library(chemometrics)
+
+set.seed(123)
 
 ## SETTING WORKSPACE ##
 
@@ -24,135 +25,192 @@ bikeDataSet <- read.csv("SeoulBikeData.csv",header=T, sep=",")
 N <- nrow(bikeDataSet)
 
 # Checking if there exist factor variables interpreted as characters
-# class_of_variables <- lapply(bikeDataSet, class) # class of each variable
-# print(class_of_variables)
+print(lapply(bikeDataSet, class)) # class of each variable
 bikeDataSet$Date <- as.factor(bikeDataSet$Date)
 bikeDataSet$Season <- as.factor(bikeDataSet$Season)
 bikeDataSet$Holiday <- as.factor(bikeDataSet$Holiday)
 bikeDataSet$Functioning.Day <- as.factor(bikeDataSet$Functioning.Day)
+bikeDataSet$Hour <- as.factor(bikeDataSet$Hour)
+bikeDataSet$Day <- as.factor(bikeDataSet$Day)
+bikeDataSet$Month <- as.factor(bikeDataSet$Month)
+bikeDataSet$Year <- as.factor(bikeDataSet$Year)
+print(lapply(bikeDataSet, class)) # class of each variable
 
 # Fast NAs comprobation
-which(is.na(bikeDataSet))
+print(length(which(is.na(bikeDataSet))))
 head(bikeDataSet)
-describe(bikeDataSet) # so cool!
+describe(bikeDataSet) # No missings found (in Excel neither)
 
-seasons <- c("Spring", "Summer", "Autumn", "Winter")
+seasons <- c("AutumnSpring", "Summer", "Winter")
 hours <- 0:23
 holiday_values <- c("Holiday", "No Holiday")
-feature_names <- c("Temperature", "Humidity", "Wind.Speed", "Visibility", "Dew.Point.Temperature", "Solar.Radiation", "Rainfall", "Snowfall")
-feature_measures <- c("Degrees Celsius", "%", "m/s", "10m", "Degrees Celsius", "MJ/m2", "mm", "cm")
+numeric_feature_names <- c("Temperature", "Humidity", "Wind.Speed", "Visibility", "Dew.Point.Temperature", "Solar.Radiation", "Rainfall", "Snowfall", "Rented.Bike.Count")
+feature_measures <- c("Degrees Celsius", "%", "m/s", "10m", "Degrees Celsius", "MJ/m2", "mm", "cm", "Number of bikes")
 
-## UNIVARIATE OUTLIER DETECTION FOR RENTED.BIKE.COUNT(more methods in the near future) ##
+####################################################################################
+# Function: univariate_outlier_detection_and_output                                #
+# Desc:                                                                            #
+# Detects the univariate outliers and outputs the results as images and .txt files #
+####################################################################################
+univariate_outlier_detection_and_output <- function(X_filtered, feature, feature_measure, season, hour, holiday, N) {
+  
+  # Outlier detection using boxplot.stats
+  outliers_values <- boxplot.stats(X_filtered[1:N, feature])$out
+  num_outliers <- length(outliers_values)
+  num_outliers_txt <- paste("Num outliers: ", num_outliers, sep="")
+  num_observations <- nrow(X_filtered)
+  num_obervations_txt <- paste("Num observations: ", num_observations, sep="")
 
-for (season in seasons) {
-
-  # Filter the observations by season
-  X_by_season <- filter(bikeDataSet, Season == season)
-
-  for (holiday_value in holiday_values) {
-
-    # Filter the observations in season by holiday
-    X_by_season_holiday <- filter(X_by_season, Holiday == holiday_value)
-
-    for (hour in hours) {
-
-      # Filter the observations in season & holiday by hour
-      X_by_season_holiday_hour <- filter(X_by_season_holiday, Hour == hour)
-      num_observations <- nrow(X_by_season_holiday_hour)
-      num_obervations_txt <- paste("Num observations: ", num_observations, sep="")
-
-      # Outlier detection using boxplot.stats
-      outliers_values = boxplot.stats(X_by_season_holiday_hour$Rented.Bike.Count)$out
-      num_outliers <- length(outliers_values)
-      num_outliers_txt <- paste("Num outliers: ", num_outliers, sep="")
-
-      # If there are outliers
-      if (num_outliers > 0) {
-
-        outliers_indices = X_by_season_holiday_hour$Rented.Bike.Count %in% outliers_values
-        outliers_ids = X_by_season_holiday_hour$Id[outliers_indices]
-
-        # File route and name definition
-        file_route <- paste(season, "/", season, sep="")
-        file_name <- paste(file_route, holiday_value, hour, "Rented.Bike.Count", sep="_")
-
-        # Save outliers'ID in a txt file
-        print(sprintf("%s outlier(s) found in [%s, %s, hour %s], feature %s", num_outliers, season, holiday_value, hour, "Rented.Bike.Count"))
-        fwrite(list(c("Outliers ID:", outliers_ids, "Outliers value:", outliers_values, num_obervations_txt, num_outliers_txt)), file = paste(file_name, ".txt", sep=""))
-
-        # Save boxplot in PNG format
-        image_name <- paste(file_name, ".png", sep="")
-        png(image_name)
-        box_title <- paste("Rented.Bike.Count", "Number of bikes", sep=" in ")
-        boxplot(X_by_season_holiday_hour$"Rented.Bike.Count",
-                main= paste(box_title, season, holiday_value, "hour:", hour, sep=" "),
-                xlab= "Number of bikes",
-                ylab= "Rented.Bike.Count",
-                col="lightblue",
-                border="black",
-                horizontal=T)
-        dev.off()
-
-      } else {
-
-        print(sprintf("No outliers found in [%s, %s, hour %s], feature %s", season, holiday_value, hour, "Rented.Bike.Count"))
-      }
-    }
+  # If there are outliers
+  if (num_outliers > 0) {
+    
+    outliers_indices <- X_filtered[1:N, feature] %in% outliers_values
+    outliers_ids_by_feature <- X_filtered$Id[outliers_indices]
+    
+    # File route and name definition
+    file_route <- paste(season, "/", season, sep="")
+    file_name <- paste(file_route, hour, holiday, feature, sep="_")
+    
+    # Save outliers'ID in a txt file
+    print(sprintf("%s outlier(s) found in [%s, hour %s, %s], feature %s", num_outliers, season, hour, holiday, feature))
+    fwrite(list(c("Outliers ID:", outliers_ids_by_feature, "Outliers value:", outliers_values, num_obervations_txt, num_outliers_txt)), file = paste(file_name, ".txt", sep=""))
+    
+    # Save boxplot in PNG format
+    image_name <- paste(file_name, ".png", sep="")
+    png(image_name)
+    box_title <- paste(feature, feature_measure, sep=" in ")
+    boxplot(X_filtered[1:N, feature], 
+            main= paste(box_title, season, "hour:", hour, holiday, sep=" "), 
+            xlab= feature_measure,
+            ylab= feature,
+            col="lightblue",
+            border="black",
+            horizontal=T)
+    dev.off()
+    
+  } else {
+    
+    print(sprintf("No outliers found in [%s, hour %s, %s], feature %s", season, hour, holiday, feature))
+    outliers_ids_by_feature <- NULL
   }
+  
+  list_numOutliers_ids <- list("numOutliers" = num_outliers, "ids" = outliers_ids_by_feature)
+  return(list_numOutliers_ids)
 }
 
+## UNIVARIATE OUTLIER DETECTION ##
+# Note: this section of the script needs the existence of 3 folders with the names: AutumnSpring, Summer and Winter
 
-## UNIVARIATE OUTLIER DETECTION FOR WEATHER-RELATED ATTRIBUTES ##
+outliers_ids_by_feature <- vector(mode = "list", length = length(numeric_feature_names))
 
-for (season in seasons) {
-  # Filter the observations by season
-  X_by_season <- filter(bikeDataSet, Season == season) 
+for (i in 1:length(numeric_feature_names)) {
   
-  for (hour in hours){
-    # Filter the seasoN observations by hour
-    X_by_season_by_hour <- filter(X_by_season, Hour == hour)
-    num_observations <- nrow(X_by_season_by_hour)
-    num_obervations_txt <- paste("Num observations: ", num_observations, sep="")
+  for (season in seasons) {
     
-    for (i in 1:length(feature_names)){
-      # Outlier detection using boxplot.stats
-      outliers_values = boxplot.stats(X_by_season_by_hour[1:N, feature_names[i]])$out
-      num_outliers <- length(outliers_values)
-      num_outliers_txt <- paste("Num outliers: ", num_outliers, sep="")
+    # Filter the observations by season
+    if (season == "AutumnSpring") {
       
-      # If there are outliers
-      if (num_outliers > 0) {
+      X_by_season <- filter(bikeDataSet, Season == "Autumn" | Season == "Spring")
+      
+    } else {
+      
+      X_by_season <- filter(bikeDataSet, Season == season) 
+    }
+    
+    for (hour in hours) {
+      
+      # Filter the season observations by hour
+      X_by_season_by_hour <- filter(X_by_season, Hour == hour)
+      
+      # Special treatment for variable Rented.Bike.Count
+      if (numeric_feature_names[i] == "Rented.Bike.Count") {
         
-        outliers_indices = X_by_season_by_hour[1:N, feature_names[i]] %in% outliers_values
-        outliers_ids = X_by_season_by_hour$Id[outliers_indices]
-        
-        # File route and name definition
-        file_route <- paste(season, "/", season, sep="")
-        file_name <- paste(file_route, hour, feature_names[i], sep="_")
-        
-        # Save outliers'ID in a txt file
-        print(sprintf("%s outlier(s) found in [%s, hour %s], feature %s", num_outliers, season, hour, feature_names[i]))
-        fwrite(list(c("Outliers ID:", outliers_ids, "Outliers value:", outliers_values, num_obervations_txt, num_outliers_txt)), file = paste(file_name, ".txt", sep=""))
-        
-        # Save boxplot in PNG format
-        image_name <- paste(file_name, ".png", sep="")
-        png(image_name)
-        box_title <- paste(feature_names[i], feature_measures[i], sep=" in ")
-        boxplot(X_by_season_by_hour[1:N, feature_names[i]], 
-                main= paste(box_title, season, "hour:", hour, sep=" "), 
-                xlab= feature_measures[i],
-                ylab= feature_names[i],
-                col="lightblue",
-                border="black",
-                horizontal=T)
-        dev.off()
+        # If the variable is Rented.Bike.Count, we also filter by holiday
+        for (holiday_value in holiday_values) {
+          
+          # Filter the observations in season and hour by holiday
+          X_by_season_by_hour_by_holiday <- filter(X_by_season_by_hour, Holiday == holiday_value)
+          list_numOutliers_ids <- univariate_outlier_detection_and_output(X_by_season_by_hour_by_holiday, numeric_feature_names[i], feature_measures[i], season, hour, holiday_value, N)
+          if (list_numOutliers_ids[["numOutliers"]] > 0) {
+            outliers_ids_by_feature[[i]] <- c(outliers_ids_by_feature[[i]], list_numOutliers_ids[["ids"]])
+          }
+        }
         
       } else {
         
-        print(sprintf("No outliers found in [%s, hour %s], feature %s", season, hour, feature_names[i]))
+        list_numOutliers_ids <- univariate_outlier_detection_and_output(X_by_season_by_hour, numeric_feature_names[i], feature_measures[i], season, hour, "NO_HOLIDAY_FILTER", N)
+        if (list_numOutliers_ids[["numOutliers"]] > 0) {
+          outliers_ids_by_feature[[i]] <- c(outliers_ids_by_feature[[i]], list_numOutliers_ids[["ids"]])
+        }
       }
     }
   }
-} 
+  
+  outliers_ids_by_feature[[i]] <- sort(unique(outliers_ids_by_feature[[i]]))
+}
 
+# Print ids of the different potential outliers found for every variable
+print(outliers_ids_by_feature)
 
+# Print number of potential outliers found for every variable
+print(lapply(outliers_ids_by_feature, length))
+
+# Print number of observations with potential outliers
+outliers_ids <- sort(unique(unlist(outliers_ids_by_feature, recursive=FALSE)))
+print(outliers_ids)
+print(length(outliers_ids)) # It should be 1452
+
+## CLUSTERING ##
+
+# Boxplot of Rented.Bike.Count by season
+boxplot(bikeDataSet$Rented.Bike.Count ~ bikeDataSet$Season,
+        col="lightblue",
+        border="black")
+
+feature_names_clustering <- c(numeric_feature_names, "Season", "Holiday", "Functioning.Day", "Hour", "Day", "Month", "Year")
+
+# For applying the clustering we need to transform categorical variables into numerical
+# We don't need Date as numerical in this section, so we don't transform it
+bikeDataSet$Season <- as.integer(bikeDataSet$Season)
+bikeDataSet$Holiday <- as.integer(bikeDataSet$Holiday)
+bikeDataSet$Functioning.Day <- as.integer(bikeDataSet$Functioning.Day)
+bikeDataSet$Hour <- as.integer(bikeDataSet$Hour)
+bikeDataSet$Day <- as.integer(bikeDataSet$Day)
+bikeDataSet$Month <- as.integer(bikeDataSet$Month)
+print(lapply(bikeDataSet, class)) # class of each variable
+
+## Elbow Method for finding the optimal number of clusters
+
+# Compute and plot wss for k = 1 to k = 10.
+k.max <- 10
+wss <- sapply(1:k.max, 
+                function(k){kmeans(bikeDataSet[1:N, feature_names_clustering], k, nstart=50, iter.max = 15)$tot.withinss})
+plot(1:k.max, wss,
+    type="b", pch = 19, 
+    xlab="Number of clusters K",
+    ylab="Total within-clusters sum of squares")
+xtick <- seq(0, k.max, by=1)
+axis(side=1, at=xtick)
+
+fit <- kmeans(bikeDataSet[1:N, feature_names_clustering], 3, nstart=50, iter.max = 15)
+fit
+
+# We filter by season and apply clustering again
+head(bikeDataSet) # Season has been transformed to 4
+winter_dataset <- subset(bikeDataSet, Season == 4, select = feature_names_clustering)
+
+# Compute and plot wss for k = 1 to k = 10.
+k.max <- 10
+wss <- sapply(1:k.max,
+              function(k){kmeans(winter_dataset, k, nstart=50, iter.max = 15)$tot.withinss})
+plot(1:k.max, wss,
+     type="b", pch = 19,
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+xtick <- seq(0, k.max, by=1)
+axis(side=1, at=xtick)
+
+fit <- kmeans(winter_dataset, 2, nstart=50, iter.max = 15)
+fit
+
+# THIS + MEDIANS FOR SEASON AND FUNCTIONAL DAY SPLITTING JUSTIFICATION!
