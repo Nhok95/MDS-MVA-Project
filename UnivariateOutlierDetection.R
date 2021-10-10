@@ -167,24 +167,14 @@ boxplot(bikeDataSet$Rented.Bike.Count ~ bikeDataSet$Season,
         col="lightblue",
         border="black")
 
-feature_names_clustering <- c(numeric_feature_names, "Season", "Holiday", "Functioning.Day", "Hour", "Day", "Month", "Year")
-
-# For applying the clustering we need to transform categorical variables into numerical
-# We don't need Date as numerical in this section, so we don't transform it
-bikeDataSet$Season <- as.integer(bikeDataSet$Season)
-bikeDataSet$Holiday <- as.integer(bikeDataSet$Holiday)
-bikeDataSet$Functioning.Day <- as.integer(bikeDataSet$Functioning.Day)
-bikeDataSet$Hour <- as.integer(bikeDataSet$Hour)
-bikeDataSet$Day <- as.integer(bikeDataSet$Day)
-bikeDataSet$Month <- as.integer(bikeDataSet$Month)
-print(lapply(bikeDataSet, class)) # class of each variable
-
 ## Elbow Method for finding the optimal number of clusters
+# NOTE: We could scale the numerical variables of the dataset before the clustering, but if we do
+# that, we loose interpretability
 
 # Compute and plot wss for k = 1 to k = 10.
 k.max <- 10
 wss <- sapply(1:k.max, 
-                function(k){kmeans(bikeDataSet[1:N, feature_names_clustering], k, nstart=50, iter.max = 15)$tot.withinss})
+                function(k){kmeans(bikeDataSet[1:N, numeric_feature_names], k, nstart = 50, iter.max = 15)$tot.withinss})
 plot(1:k.max, wss,
     type="b", pch = 19, 
     xlab="Number of clusters K",
@@ -192,17 +182,19 @@ plot(1:k.max, wss,
 xtick <- seq(0, k.max, by=1)
 axis(side=1, at=xtick)
 
-fit <- kmeans(bikeDataSet[1:N, feature_names_clustering], 3, nstart=50, iter.max = 15)
-fit
+fit <- kmeans(bikeDataSet[1:N, numeric_feature_names], 3, nstart = 50, iter.max = 15)
+fit$centers
+table(bikeDataSet[which(fit$cluster == 1), "Season"])
+table(bikeDataSet[which(fit$cluster == 2), "Season"])
+table(bikeDataSet[which(fit$cluster == 3), "Season"])
 
-# We filter by season and apply clustering again
-head(bikeDataSet) # Season has been transformed to 4
-winter_dataset <- subset(bikeDataSet, Season == 4, select = feature_names_clustering)
+# We filter by season (for example, we select the Winter) and apply clustering again
+winter_dataset <- subset(bikeDataSet, Season == "Winter", select = numeric_feature_names)
 
 # Compute and plot wss for k = 1 to k = 10.
 k.max <- 10
 wss <- sapply(1:k.max,
-              function(k){kmeans(winter_dataset, k, nstart=50, iter.max = 15)$tot.withinss})
+              function(k){kmeans(winter_dataset, k, nstart = 50, iter.max = 15)$tot.withinss})
 plot(1:k.max, wss,
      type="b", pch = 19,
      xlab="Number of clusters K",
@@ -210,7 +202,7 @@ plot(1:k.max, wss,
 xtick <- seq(0, k.max, by=1)
 axis(side=1, at=xtick)
 
-fit <- kmeans(winter_dataset, 2, nstart=50, iter.max = 15)
-fit
+fit <- kmeans(winter_dataset, 2, nstart = 50, iter.max = 15)
+fit$centers
 
 # THIS + MEDIANS FOR SEASON AND FUNCTIONAL DAY SPLITTING JUSTIFICATION!
