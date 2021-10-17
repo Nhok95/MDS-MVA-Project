@@ -74,8 +74,8 @@ table(bikeDataSet$Hour)
 #ds = filter(bikeDataSet, Season == "Winter")
 
 ds_original = bikeDataSet[which(bikeDataSet$Season == "Winter"),]
-ds = ds_original[,c(3,5:12)]
-
+ds = ds_original[,c(5,7:15)]
+ds = bikeDataSet[,c(5,7:15)]
 
 X_Summer = filter(new_bikeDataSet, Season == "Summer")
 X_Spring = filter(new_bikeDataSet, Season == "Spring")
@@ -87,7 +87,7 @@ X = X_Autumn[,c(3,5:12)]
 names(ds)
 
 #boxplot(X, ylim=c(0,40))
-#boxplot(X$Rented.Bike.Count ~ X$Season) # Autumn ~ Spring; Summer; Winter
+boxplot(bikeDataSet$Rented.Bike.Count ~ bikeDataSet$Season) # Autumn ~ Spring; Summer; Winter
 
 boxplot(ds)
 #Example
@@ -100,9 +100,7 @@ boxplot(ds$Temperature,
         horizontal=T, 
         notch=T)
 
-
-
-
+boxplot(ds$Temperature)
 boxplot(ds$Humidity)
 boxplot(ds$Wind.Speed)
 boxplot(ds$Visibility)

@@ -8,6 +8,8 @@ rm(list=ls(all=TRUE))
 
 library(rstudioapi)
 library(mice)
+library(tidyverse)
+library(VIM)
 #library(tibble)
 #library(dplyr)
 
@@ -141,9 +143,57 @@ checkDiff2 = function(original, bikeDS_imp, meanBool="T") {
   return(diff)
 }
 
+## CORRELATIONS
+library(corrplot)
+DS <- bikeDataSet[,c(6,8:15)]
+cor(DS, use="complete.obs")
+#plot(DS)
+
+cr = cor(DS, use="complete.obs")
+corrplot(cr, method="number", type="lower", bg='lightslategray')
+################
+
+## SKEWNESS
+library(e1071)
+skewness(DS$Rented.Bike.Count, na.rm = TRUE)     # 1.150
+skewness(DS$Temperature, na.rm = TRUE)           #-0.197
+skewness(DS$Humidity, na.rm = TRUE)              # 0.093
+skewness(DS$Wind.Speed, na.rm = TRUE)            # 0.781
+skewness(DS$Visibility, na.rm = TRUE)            #-0.703
+skewness(DS$Dew.Point.Temperature, na.rm = TRUE) #-0.367
+skewness(DS$Solar.Radiation, na.rm = TRUE)       # 1.503
+skewness(DS$Rainfall, na.rm = TRUE)              # 16.35
+skewness(DS$Snowfall, na.rm = TRUE)              # 8.438
+################
+
+
+## PLOTS
+DS <- bikeDataSet[,c(6,8:14)]
+#md.pattern(DS,rotate.names = TRUE)
+aggr(DS,
+     numbers=TRUE,
+     cex.axis=.8,
+     gap=1,
+     ylab=c('Histogram of Missing data', 'Pattern'))
+
+aggr(DS,
+     numbers=TRUE,
+     sortVars=TRUE,
+     cex.axis=1.1,
+     labels=c('RBikes','Temp','Humid.',
+              'WindSp','Visib.','DPTem',
+              'Sol.Rad','Rainf'),
+     gap=1,
+     ylab=c('Histogram of Missing data', 'Pattern'))
+
+# We realize the % of missing data are really low
+
+################
+
+
 cnames = colnames(original[c(6,8,9,10,11,12,13,14)])
 
-imp1=mice(bikeDataSet,m=25, maxit = 100)
+imp1=mice(bikeDataSet,m=5, maxit = 1)
 bikeDS_imp=complete(imp1)
 length(which(is.na(bikeDS_imp)))
 
@@ -156,8 +206,6 @@ diff1.mean = checkDiff2(original, bikeDS_imp, TRUE)
 diff1.var = checkDiff2(original, bikeDS_imp, FALSE)
 
 
-
-
 init = mice(bikeDataSet, maxit=0)
 meth = init$method
 predM = init$predictorMatrix
@@ -165,27 +213,8 @@ predM = init$predictorMatrix
 predM[c("Id"),]=0
 predM[,c("Id")]=0
 
-#predM[c("Day"),]=0
-#predM[,c("Day")]=0
-
-#predM[c("Month"),]=0
-#predM[,c("Month")]=0
-
-#predM[c("Year"),]=0
-#predM[,c("Year")]=0
-
 predM[c("Date"),]=0
 predM[,c("Date")]=0
-
-#meth[c("Rented.Bike.Count")]="norm"
-#meth[c("Temperature")]="norm"
-#meth[c("Humidity")]="norm"
-#meth[c("Wind.Speed")]="norm"
-#meth[c("Visibility")]="norm"
-#meth[c("Dew.Point.Temperature")]="norm"
-#meth[c("Solar.Radiation")]="norm"
-#meth[c("Rainfall")]="norm"
-
 
 #predM; meth
 
@@ -200,7 +229,7 @@ densityplot(imp2)
 diff2.mean = checkDiff2(original, bikeDS_imp2, TRUE)
 diff2.var = checkDiff2(original, bikeDS_imp2, FALSE)
 
-diff.df.mean = data.frame(diff1.mean,diff2.mean, row.names=cnames)
+diff.df.mean = data.frame(diff2.mean, row.names=cnames)
 diff.df.mean = as.data.frame(t(diff.df.mean))
 
 diff.df.var = data.frame(diff1.var,diff2.var, row.names=cnames)
