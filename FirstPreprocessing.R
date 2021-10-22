@@ -15,7 +15,7 @@ library(dplyr)
 ## SETTING WORKSPACE ##
 
 current_path <- getActiveDocumentContext()$path 
-setwd(dirname(current_path ))
+setwd(dirname(current_path))
 
 ## GETTING DATASET AND GENERATING ID, MONTH AND DAY COLUMNS ##
 

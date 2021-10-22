@@ -18,7 +18,7 @@ set.seed(123)
 ## SETTING WORKSPACE ##
 
 current_path <- getActiveDocumentContext()$path
-setwd(dirname(current_path ))
+setwd(dirname(current_path))
 
 # Reading dataset
 bikeDataSet <- read.csv("SeoulBikeData.csv",header=T, sep=",")
@@ -36,10 +36,35 @@ bikeDataSet$Month <- as.factor(bikeDataSet$Month)
 bikeDataSet$Year <- as.factor(bikeDataSet$Year)
 print(lapply(bikeDataSet, class)) # class of each variable
 
+## MISSING DATA ##
+
+summary(bikeDataSet)
+mis_ind = rowSums(is.na(bikeDataSet))
+table(mis_ind) 
+m1 = which(mis_ind>0)
+bikeDataSet[m1,] # 0 rows
+
+## Simple missing values checking for Days and Hours ##
+day_levels = levels(as.factor(bikeDataSet$Date)); day_levels
+length( day_levels ) #levels length == 365 days ~ No NAs
+
+hour_levels = levels(as.factor(bikeDataSet$Hour)); hour_levels
+length( hour_levels ) #levels length == 24 hours ~ No NAs
+
+## More complex missing value checking ##
+date_table <- table(bikeDataSet$Date); date_table
+length(date_table) #365 days
+date_table[date_table != 24] #less or more than 24 hours per day -> 0 results
+table(bikeDataSet$Hour)
+
 # Fast NAs comprobation
 print(length(which(is.na(bikeDataSet))))
-head(bikeDataSet)
 describe(bikeDataSet) # No missings found (in Excel neither)
+
+###
+
+# Checking how similar the different seasons are, we decide to join Autumn and Spring
+boxplot(bikeDataSet$Rented.Bike.Count ~ bikeDataSet$Season)
 
 seasons <- c("AutumnSpring", "Summer", "Winter")
 hours <- 0:23

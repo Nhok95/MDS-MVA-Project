@@ -17,10 +17,8 @@ set.seed(123)
 
 ## SETTING WORKSPACE ##
 
-#current_path <- getActiveDocumentContext()$path
-#setwd(dirname(current_path ))
-
-setwd("C:\\Users\\Albert Pita\\Desktop\\Master\\MVA\\MDS-MVA-Project")
+current_path <- getActiveDocumentContext()$path
+setwd(dirname(current_path))
 
 # Reading dataset
 bikeDataSet <- read.csv("SeoulBikeData.csv",header=T, sep=",")

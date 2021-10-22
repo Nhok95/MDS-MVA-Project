@@ -16,7 +16,7 @@ library(VIM)
 ## SETTING WORKSPACE ##
 
 current_path <- getActiveDocumentContext()$path 
-setwd(dirname(current_path ))
+setwd(dirname(current_path))
 
 ## LOADING DATASET ##
 
@@ -31,6 +31,7 @@ str(bikeDataSet)
 
 original <- bikeDataSet
 #bikeDataSet <- original
+
 ### Outliers List ### 
 
 #outliers <- list(c(1,8), c(2,9))
@@ -238,6 +239,3 @@ diff.df.var = as.data.frame(t(diff.df.var))
 
 write.table(bikeDS_imp2, file = "SeoulBikeData_FirstImp.csv", quote = FALSE, 
             sep = ",", na = "NA", dec = ".", row.names = FALSE, col.names = TRUE)
-
-
-
