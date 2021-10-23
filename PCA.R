@@ -18,7 +18,8 @@ set.seed(123)
 current_path <- getActiveDocumentContext()$path
 setwd(dirname(current_path))
 
-### This chunck of code would be better inside Imputation script
+### This chunk of code would be better inside Imputation script
+# DO NOT EXECUTE THIS CHUNK AGAIN IF NOT ABSOLUTELY NECESSARY!!!
 
 # Reading dataset
 bikeDataSet <- read.csv("SeoulBikeData_FirstImp.csv",header=T, sep=",")
@@ -93,6 +94,8 @@ res.pca <- PCA(bikeDataSetClean,
                quali.sup=1:6,
                graph=TRUE)
 
+summary(res.pca)
+
 # Selecting the number of PCs that we'll keep
 eigenvalues <- get_eigenvalue(res.pca)
 eigenvalues # First 3 dimensions have eigenvalues > 1
@@ -120,10 +123,19 @@ fviz_contrib(res.pca, choice = "var", axes = 4, top = 10)
 fviz_contrib(res.pca, choice = "var", axes = 1:2, top = 10)
 fviz_contrib(res.pca, choice = "var", axes = 3:4, top = 10)
 
-# Dimension description (PCs 1 and 2)
-dim.desc <- dimdesc(res.pca, axes = c(1,2), proba = 0.05)
-dim.desc$Dim.1
-dim.desc$Dim.2
+# Dimension description (PCs 1, 2, 3 & 4), very useful for checking correlations
+# between variables and dimensions
+dim.desc <- dimdesc(res.pca, axes = 1:4, proba = 0.05)
+dim.desc$Dim.1$quanti
+dim.desc$Dim.1$quali
+dim.desc$Dim.1$category
+dim.desc$Dim.2$quanti
+dim.desc$Dim.2$quali
+dim.desc$Dim.2$category
+dim.desc$Dim.3$quanti
+dim.desc$Dim.3$quali
+dim.desc$Dim.4$quanti
+dim.desc$Dim.4$quali
 
 ## Individuals
 
@@ -153,6 +165,13 @@ res.pca$quali.sup
 fviz_pca_ind(res.pca, habillage = 4, addEllipses=TRUE, ellipse.type = "confidence", palette = "jco", repel=TRUE) 
 fviz_pca_ind(res.pca, habillage = 5, addEllipses =TRUE, ellipse.type = "confidence", palette = "jco", repel=TRUE)
 fviz_pca_ind(res.pca, habillage = 6, addEllipses =TRUE, ellipse.type = "confidence", palette = "jco", repel=TRUE)
-fviz_pca_biplot(res.pca, select.ind = list(contrib = 5), select.var = list(contrib = 5), ggtheme = theme_minimal())
+fviz_pca_biplot(res.pca, select.ind = list(contrib = 5, cos2 = 0.5), ggtheme = theme_minimal(), repel = TRUE)
 fviz_pca_biplot(res.pca, col.var = "contrib", gradient.cols = c("green", "orange", "red"))
 
+load("bikeDataSet.RData")
+bikeDataSetClean <- bikeDataSet[which(bikeDataSet$mout == "NoMOut"),]
+most_important_individuals_idx <- c(1302, 1306, 1307, 1310, 6461)
+most_important_variables_names <- c("Id", "Temperature", "Dew.Point.Temperature", "Humidity", "Solar.Radiation")
+bikeDataSetClean[most_important_individuals_idx, most_important_variables_names]
+write.csv(bikeDataSetClean[most_important_individuals_idx, most_important_variables_names],"5_most_important_individuals.csv", row.names = TRUE)
+summary(bikeDataSetClean)
