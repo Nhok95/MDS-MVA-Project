@@ -64,7 +64,29 @@ describe(bikeDataSet) # No missings found (in Excel neither)
 ###
 
 # Checking how similar the different seasons are, we decide to join Autumn and Spring
-boxplot(bikeDataSet$Rented.Bike.Count ~ bikeDataSet$Season)
+b <- boxplot(bikeDataSet$Rented.Bike.Count ~ bikeDataSet$Season,
+        main = "Rented Bike Count in function of Season",
+        xlab = "Season",
+        ylab = "Rented Bike Count",
+        col = c("darkgoldenrod","springgreen2","khaki2", "lightblue"))
+b$stats
+abline(h=b$stats[2,2],
+       lty=2, lwd=2) #Spring Q1
+abline(h=b$stats[4,1],
+       lty=2, lwd=2) #Autumn Q3
+abline(h=mean(c(b$stats[3,1],b$stats[3,2])),
+       col="red", lty=1, lwd=2) # Mean between Spring and Autumn Q2s
+
+# Checking boxplot difference between using hours as filter and not
+ds = bikeDataSet[which(bikeDataSet$Hour == 12),]
+
+boxplot(ds$Solar.Radiation, bikeDataSet$Solar.Radiation,
+        main = "Solar Radiation With hours filter and without",
+        at = c(1,2),
+        names = c("Hour=12","No filter"),
+        col = c("firebrick1","lightblue"))
+
+################################################
 
 seasons <- c("AutumnSpring", "Summer", "Winter")
 hours <- 0:23

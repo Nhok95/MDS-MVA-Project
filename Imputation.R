@@ -83,36 +83,7 @@ str(bikeDataSet)
 
 
 ### First data imputation with MICE ###
-checkDiff = function(original, bikeDS_imp, bikeDataSet, meanBool="T") {
-  diff = c()
-  cnames = colnames(original[c(6,8,9,10,11,12,13,14)])
-  
-  for (i in c(1:length(cnames))) {
-    actual = original[,cnames[i]][is.na(bikeDataSet[,cnames[i]])]
-    predicted = bikeDS_imp[,cnames[i]][is.na(bikeDataSet[,cnames[i]])]
-    print("###")
-    print(sprintf("--column: %s", cnames[i]))
-    
-    if (meanBool) {
-      print(mean(actual))
-      print(mean(predicted))
-      
-      diff = append(diff,mean(actual) - mean(predicted))  
-    } else {
-      print(var(actual))
-      print(var(predicted))
-      
-      diff = append(diff,var(actual) - var(predicted)) 
-    }
-    
-    
-    print(sprintf("----diff: %s ", diff[i]))
-  }
-  
-  return(diff)
-}
-
-checkDiff2 = function(original, bikeDS_imp, meanBool="T") {
+checkDiff = function(original, bikeDS_imp, meanBool="T") {
   diff = c()
   cnames = colnames(original[c(6,8,9,10,11,12,13,14)])
   
@@ -170,12 +141,6 @@ skewness(DS$Snowfall, na.rm = TRUE)              # 8.438
 
 ## PLOTS
 DS <- bikeDataSet[,c(6,8:14)]
-#md.pattern(DS,rotate.names = TRUE)
-aggr(DS,
-     numbers=TRUE,
-     cex.axis=.8,
-     gap=1,
-     ylab=c('Histogram of Missing data', 'Pattern'))
 
 aggr(DS,
      numbers=TRUE,
@@ -198,14 +163,10 @@ imp1=mice(bikeDataSet,m=5, maxit = 1)
 bikeDS_imp=complete(imp1)
 length(which(is.na(bikeDS_imp)))
 
-plot(imp1)
 densityplot(imp1)
-#stripplot(imp, pch = 20, cex = 2)
 
-#diff1 = checkMeanDiff(original, bikeDS_imp, bikeDataSet, TRUE)
-diff1.mean = checkDiff2(original, bikeDS_imp, TRUE)
-diff1.var = checkDiff2(original, bikeDS_imp, FALSE)
-
+diff1.mean = checkDiff(original, bikeDS_imp, TRUE)
+diff1.var = checkDiff(original, bikeDS_imp, FALSE)
 
 init = mice(bikeDataSet, maxit=0)
 meth = init$method
@@ -223,12 +184,11 @@ imp2=mice(bikeDataSet,m=25, maxit = 100, method=meth, predictorMatrix = predM)
 bikeDS_imp2=complete(imp2)
 length(which(is.na(bikeDS_imp2)))
 
-plot(imp2)
 densityplot(imp2)
 
 
-diff2.mean = checkDiff2(original, bikeDS_imp2, TRUE)
-diff2.var = checkDiff2(original, bikeDS_imp2, FALSE)
+diff2.mean = checkDiff(original, bikeDS_imp2, TRUE)
+diff2.var = checkDiff(original, bikeDS_imp2, FALSE)
 
 diff.df.mean = data.frame(diff2.mean, row.names=cnames)
 diff.df.mean = as.data.frame(t(diff.df.mean))
