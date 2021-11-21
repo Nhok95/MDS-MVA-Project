@@ -1,0 +1,24 @@
+Outliers ID:
+3008
+3224
+3440 CHOSEN
+3656
+3752
+3896
+4040
+7040
+7064
+7424 CHOSEN
+Outliers value:
+1.5
+2
+6 CHOSEN
+1
+2.5
+0.1
+0.5
+1.5
+5
+9.5 CHOSEN
+Num observations: 183
+Num outliers: 10

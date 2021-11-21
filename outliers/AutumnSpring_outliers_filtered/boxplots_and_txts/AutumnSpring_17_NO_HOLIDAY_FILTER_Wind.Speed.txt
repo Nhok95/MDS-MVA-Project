@@ -1,0 +1,10 @@
+Outliers ID:
+3066 CHOSEN
+3138 CHOSEN
+7938 CHOSEN
+Outliers value:
+5.3 CHOSEN
+5.6 CHOSEN
+5.7 CHOSEN
+Num observations: 183
+Num outliers: 3

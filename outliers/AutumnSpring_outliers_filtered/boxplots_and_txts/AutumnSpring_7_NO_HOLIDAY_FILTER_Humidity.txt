@@ -1,0 +1,14 @@
+Outliers ID:
+4064 CHOSEN
+4112 CHOSEN
+4256 CHOSEN
+4280 CHOSEN
+8696
+Outliers value:
+0 CHOSEN
+0 CHOSEN
+0 CHOSEN
+0 CHOSEN
+24
+Num observations: 183
+Num outliers: 5

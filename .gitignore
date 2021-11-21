@@ -8,6 +8,5 @@
 *.log
 log.txt
 
-/outliers
 
 .Rhistory

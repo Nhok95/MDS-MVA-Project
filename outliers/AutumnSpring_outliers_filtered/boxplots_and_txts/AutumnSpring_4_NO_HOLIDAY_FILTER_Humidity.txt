@@ -1,0 +1,16 @@
+Outliers ID:
+3197
+4109 CHOSEN
+4133 CHOSEN
+4277 CHOSEN
+8597
+8693
+Outliers value:
+29
+0 CHOSEN
+0 CHOSEN
+0 CHOSEN
+26
+26
+Num observations: 183
+Num outliers: 6

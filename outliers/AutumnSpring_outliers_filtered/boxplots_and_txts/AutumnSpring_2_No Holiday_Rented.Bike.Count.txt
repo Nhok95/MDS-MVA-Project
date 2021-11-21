@@ -1,0 +1,6 @@
+Outliers ID:
+6579 CHOSEN
+Outliers value:
+785 CHOSEN
+Num observations: 175
+Num outliers: 1

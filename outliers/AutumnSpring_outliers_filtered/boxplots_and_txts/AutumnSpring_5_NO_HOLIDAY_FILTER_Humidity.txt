@@ -1,0 +1,14 @@
+Outliers ID:
+4110
+4134
+4254
+4278
+8598
+Outliers value:
+0 CHOSEN
+0 CHOSEN
+0 CHOSEN
+0 CHOSEN
+27
+Num observations: 183
+Num outliers: 5

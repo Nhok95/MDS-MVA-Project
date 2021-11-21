@@ -1,0 +1,20 @@
+Outliers ID:
+2170 CHOSEN
+2626
+3058
+3682
+3994
+7306
+7522
+7930
+Outliers value:
+4.9 CHOSEN
+3.9
+3.6
+3.9
+3.1
+3.4
+3.3
+4
+Num observations: 183
+Num outliers: 8

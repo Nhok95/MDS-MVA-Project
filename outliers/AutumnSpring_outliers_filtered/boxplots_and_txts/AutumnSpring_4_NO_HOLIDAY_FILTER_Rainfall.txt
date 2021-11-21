@@ -1,0 +1,30 @@
+Outliers ID:
+2981
+3029
+3053
+3221
+3437
+3461
+3749
+4013 CHOSEN
+4037
+6917
+6941
+7061
+7421
+Outliers value:
+3
+2
+0.1
+0.8
+3.5
+0.5
+1.5
+19 CHOSEN
+1
+0.1
+0.3
+2.5
+2.5
+Num observations: 183
+Num outliers: 13

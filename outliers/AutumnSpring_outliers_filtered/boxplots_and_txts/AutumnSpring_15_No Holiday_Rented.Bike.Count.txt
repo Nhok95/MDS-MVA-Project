@@ -1,0 +1,12 @@
+Outliers ID:
+3784
+3928 CHOSEN
+4072
+7192
+Outliers value:
+2191
+2329 CHOSEN
+2268
+2170
+Num observations: 175
+Num outliers: 4

@@ -22,25 +22,23 @@ setwd(dirname(current_path))
 
 bikeDataSet <- read.csv("SeoulBikeData.csv",header=T, sep=",")
 
-bikeDataSet$Date <- as.factor(bikeDataSet$Date)
+bikeDataSet$Day = as.factor(bikeDataSet$Day)
+bikeDataSet$Month = as.factor(bikeDataSet$Month)
+bikeDataSet$Year = as.factor(bikeDataSet$Year)
+bikeDataSet$Date = as.factor(bikeDataSet$Date)
+bikeDataSet$Hour = as.factor(bikeDataSet$Hour)
 bikeDataSet$Season <- as.factor(bikeDataSet$Season)
 bikeDataSet$Holiday <- as.factor(bikeDataSet$Holiday)
 bikeDataSet$Functioning.Day <- as.factor(bikeDataSet$Functioning.Day)
 
 str(bikeDataSet)
 
-original <- bikeDataSet
-#bikeDataSet <- original
 
 ### Outliers List ### 
-
-#outliers <- list(c(1,8), c(2,9))
 
 spr_aut_outliers <- read.csv("outliers/Spring_Autumn_outliers_filtered.csv",header=T, sep=",")
 summer_outliers  <- read.csv("outliers/Summer_outliers_filtered.csv",header=T, sep=",")
 winter_outliers  <- read.csv("outliers/Winter_outliers_filtered.csv",header=T, sep=",")
-
-#outliers <- list(c(1,"Temperature"), c(2,"Humidity"))
 
 ### Removing all the outliers
 
@@ -82,43 +80,11 @@ length(which(is.na(bikeDataSet))) # Total: 248 NAs
 str(bikeDataSet)
 
 
-### First data imputation with MICE ###
-checkDiff = function(original, bikeDS_imp, meanBool="T") {
-  diff = c()
-  cnames = colnames(original[c(6,8,9,10,11,12,13,14)])
-  
-  for (i in c(1:length(cnames))) {
-    actual = original[,cnames[i]]
-    predicted = bikeDS_imp[,cnames[i]]
-    print("###")
-    print(sprintf("--column: %s", cnames[i]))
-    
-    if (meanBool) {
-      print("Mean")
-      print(mean(actual))
-      print(mean(predicted))
-      
-      diff = append(diff, abs(mean(actual, na.rm=T) - mean(predicted, na.rm=T)))
-    } else {
-      print("Var")
-      print(var(actual))
-      print(var(predicted))
-      
-      diff = append(diff, abs(var(actual, na.rm=T) - var(predicted, na.rm=T)))
-    }
-    
-    
-    
-    print(sprintf("----diff: %s ", diff[i]))
-  }
-  
-  return(diff)
-}
+### Data imputation with MICE ###
 
 ## CORRELATIONS
 library(corrplot)
 DS <- bikeDataSet[,c(6,8:15)]
-cor(DS, use="complete.obs")
 #plot(DS)
 
 cr = cor(DS, use="complete.obs")
@@ -157,44 +123,99 @@ aggr(DS,
 ################
 
 
-cnames = colnames(original[c(6,8,9,10,11,12,13,14)])
+summary(bikeDataSet)
+str(bikeDataSet)
 
-imp1=mice(bikeDataSet,m=5, maxit = 1)
-bikeDS_imp=complete(imp1)
+###
+impDF = bikeDataSet[,c(6:16)]
+str(impDF)
+
+
+imp=mice(impDF,m=1, maxit = 50)
+densityplot(imp)
+bikeDS_imp2=complete(imp)
 length(which(is.na(bikeDS_imp)))
 
-densityplot(imp1)
-
-diff1.mean = checkDiff(original, bikeDS_imp, TRUE)
-diff1.var = checkDiff(original, bikeDS_imp, FALSE)
-
-init = mice(bikeDataSet, maxit=0)
-meth = init$method
-predM = init$predictorMatrix
-
-predM[c("Id"),]=0
-predM[,c("Id")]=0
-
-predM[c("Date"),]=0
-predM[,c("Date")]=0
-
-#predM; meth
-
-imp2=mice(bikeDataSet,m=25, maxit = 100, method=meth, predictorMatrix = predM)
-bikeDS_imp2=complete(imp2)
-length(which(is.na(bikeDS_imp2)))
-
-densityplot(imp2)
 
 
-diff2.mean = checkDiff(original, bikeDS_imp2, TRUE)
-diff2.var = checkDiff(original, bikeDS_imp2, FALSE)
+imp=mice(bikeDataSet ,m=1, maxit = 15)
+bikeDS_imp=complete(imp)
+length(which(is.na(bikeDS_imp)))
 
-diff.df.mean = data.frame(diff2.mean, row.names=cnames)
-diff.df.mean = as.data.frame(t(diff.df.mean))
+densityplot(imp)
+#densityplot(imp, ~ Rented.Bike.Count | .imp)
 
-diff.df.var = data.frame(diff1.var,diff2.var, row.names=cnames)
-diff.df.var = as.data.frame(t(diff.df.var))
+
+# Temperature,Dew.Point.Temperature, Visilibity and Humidity seem to are not correctly imputed
+# If we compare the 2 complete distributions, we realize that are practically the same
+# As the proportion of NAs in this columns is really slow is hard to get a good distribution. 
+
+par(mfrow=c(2,4))
+#indRBC = which(is.na(impDF$Rented.Bike.Count)); length(indRBC)       
+plot(density(impDF$Rented.Bike.Count, na.rm = T), lwd=4, col="blue", main="Rented Bike Count")
+lines(density(bikeDS_imp$Rented.Bike.Count), lwd=1, col="red")
+#lines(density(bikeDS_imp$Rented.Bike.Count[indRBC]), lwd=1, col="orange")
+
+#indTemp = which(is.na(impDF$Temperature)); length(indTemp)       
+plot(density(impDF$Temperature, na.rm = T), lwd=4, col="blue", main="Temperature")
+lines(density(bikeDS_imp$Temperature), lwd=1, col="red")
+#lines(density(bikeDS_imp$Temperature[indTemp]), lwd=1, col="orange")
+
+#indHum = which(is.na(impDF$Humidity)); length(indHum)      
+plot(density(impDF$Humidity, na.rm = T), lwd=4, col="blue", main="Humidity")
+lines(density(bikeDS_imp$Humidity), lwd=1, col="red")
+#lines(density(bikeDS_imp$Humidity[indHum]), lwd=1, col="orange")
+
+#indWind = which(is.na(impDF$Wind.Speed)); length(indWind)  
+plot(density(impDF$Wind.Speed, na.rm = T), lwd=4, col="blue", main="Wind Speed")
+lines(density(bikeDS_imp$Wind.Speed), lwd=1, col="red")
+#lines(density(bikeDS_imp$Wind.Speed[indWind]), lwd=1, col="orange")
+
+#indVis = which(is.na(impDF$Visibility)); length(indVis)      
+plot(density(impDF$Visibility, na.rm = T), lwd=4, col="blue", main="Visibility")
+lines(density(bikeDS_imp$Visibility), lwd=1, col="red")
+#lines(density(bikeDS_imp$Visibility[indVis]), lwd=1, col="orange")
+
+#indDPT = which(is.na(impDF$Dew.Point.Temperature)); length(indDPT)      
+plot(density(impDF$Dew.Point.Temperature, na.rm = T), lwd=4, col="blue", main="DPT")
+lines(density(bikeDS_imp$Dew.Point.Temperature), lwd=1, col="red")
+#lines(density(bikeDS_imp$Dew.Point.Temperature[indDPT]), lwd=1, col="orange")
+
+#indRain = which(is.na(impDF$Rainfall)); length(indRain)     
+plot(density(impDF$Rainfall, na.rm = T), lwd=4, col="blue", main="Rainfall")
+lines(density(bikeDS_imp$Rainfall), lwd=1, col="red")
+#lines(density(bikeDS_imp$Rainfall[indRain]), lwd=1, col="orange")
+
+
+par(mfrow=c(1,1))
+
+
+#bikeDataSet$Rented.Bike.Count <- bikeDS_imp$Rented.Bike.Count
+#bikeDataSet$Wind.Speed <- bikeDS_imp$Wind.Speed
+#bikeDataSet$Rainfall <- bikeDS_imp$Rainfall
+
+#length(which(is.na(bikeDataSet))) #61
+
+
+# We are going to try with knn
+impDF = bikeDataSet[,c(6:16)]
+
+impknn = knnImputation(impDF, k=5) # k-nearest neightbors
+length(which(is.na(impknn)))
+
+summary(impknn)
+summary(impDF)
+
+plot(density(impDF$Temperature, na.rm = T))
+lines(density(impknn$Temperature), col="red")
+
+plot(density(impDF$Temperature, na.rm = T))
+lines(density(impknn$Temperature[indTemp]), col="red")
+
+
+dd[mis_ind>0,]
+dd_imp_knn[mis_ind>0,]
+dd_imp_knn2[mis_ind>0,]
 
 
 write.table(bikeDS_imp2, file = "SeoulBikeData_FirstImp.csv", quote = FALSE, 

@@ -1,0 +1,24 @@
+Outliers ID:
+3429
+3453
+3669
+3909
+4005
+4029 CHOSEN
+4149
+4317
+6645
+7413
+Outliers value:
+1.5
+1
+0.5
+1
+0.5
+12.5 CHOSEN
+0.5
+1
+0.5
+1
+Num observations: 183
+Num outliers: 10

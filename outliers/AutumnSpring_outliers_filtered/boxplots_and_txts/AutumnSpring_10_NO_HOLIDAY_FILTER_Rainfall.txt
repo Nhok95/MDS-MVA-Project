@@ -1,0 +1,28 @@
+Outliers ID:
+3227
+3419
+3443
+3755
+3899
+3995
+4019
+6635
+7043
+7067
+7403
+7427 CHOSEN
+Outliers value:
+1.5
+0.3
+4
+1.5
+2.5
+1
+2
+0.5
+0.5
+1
+1.5
+6 CHOSEN
+Num observations: 183
+Num outliers: 12

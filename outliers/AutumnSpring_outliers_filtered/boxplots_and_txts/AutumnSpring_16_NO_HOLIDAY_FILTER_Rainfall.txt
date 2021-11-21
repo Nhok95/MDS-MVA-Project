@@ -1,0 +1,18 @@
+Outliers ID:
+3017
+3449
+3665
+3905
+4145
+6641
+7409 CHOSEN
+Outliers value:
+1
+1
+0.5
+1.5
+0.4
+3.5
+6 CHOSEN
+Num observations: 183
+Num outliers: 7

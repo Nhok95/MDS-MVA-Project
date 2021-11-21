@@ -1,0 +1,22 @@
+Outliers ID:
+3446
+3662
+3686
+3902
+3998 CHOSEN
+4046
+7406
+7430
+7910
+Outliers value:
+2.5
+4
+0.1
+3
+35 CHOSEN
+0.5
+4
+0.5
+1.5
+Num observations: 183
+Num outliers: 9
