@@ -16,11 +16,17 @@ current_path = getActiveDocumentContext()$path
 setwd(dirname(current_path))
 
 ## LOADING DATASET ##
-load("bikeDataSet.RData")
+##load("bikeDataSet.RData")
+load("bikeDataSet_train.RData")
 
 # Select observations from numerical features which are not considered outliers
-bikeDataSetClean = bikeDataSet[which(bikeDataSet$mout == "NoMOut"),]
-bikeDataSetClean = select(bikeDataSetClean, -c("Id","mout"))
+bikeDataSetClean = select(bikeDataSet_train, -c("Id"))
+
+bikeDataSetClean$Hour = as.numeric(bikeDataSetClean$Hour)
+
+rowlabels = bikeDataSetClean$Season
+
+rownames(bikeDataSetClean) = paste(rowlabels, rownames(bikeDataSetClean), sep="-")
 
 num_col = unlist(lapply(bikeDataSetClean, is.numeric))
 df <- scale(bikeDataSetClean[, num_col]) # x - mean / sd
@@ -32,14 +38,31 @@ head(df)
 ##res.dist <- get_dist(matrix_BDS, method = "pearson") 
 ##fviz_dist(res.dist, lab_size = 8)
 
-#res.km <- eclust(df, "kmeans", nstart = 2)
+
+res.km <- eclust(df, k = 3, "kmeans", nstart = 25)
+#fviz_gap_stat(res.km$gap_stat) #best num of clusters
+
+fviz_silhouette(res.km) #negative silhouette means that is wrong assigned
+
+###### Postprocessing - Getting Profiles
+
+results<-data.frame(bikeDataSetClean,res.km$cluster)
+
+n.winter = length(which(results$Season == "Winter")) # 1499
+n.clust3 = length(which(results$Season == "Winter" & results$res.km.cluster == 3)) #1123
+
+prop.winter = n.clust3 / n.winter # 0.75%
+
+n.summer = length(which(results$Season == "Summer")) # 1537
+n.clust2 = length(which(results$Season == "Summer" & results$res.km.cluster == 2)) #653
+
+prop.summer = n.clust2 / n.summer # 0.42%
 
 
+n.summer = length(which(results$Season == "")) # 1537
+n.clust2 = length(which(results$Season == "Summer" & results$res.km.cluster == 2)) #653
 
-
-
-
-
+prop.summer = n.clust2 / n.summer # 0.42%
 
 
 
@@ -51,12 +74,12 @@ df2 <- scale(USArrests)  # x - mean / sd
 head(df2)
 res.dist <- get_dist(df2, method = "pearson")
 fviz_dist(res.dist, lab_size = 8)
-res.km <- eclust(df2, "kmeans", nstart = 25) #clustering with factominer, nstart values represents the number of configurations generated
-fviz_gap_stat(res.km$gap_stat) #best # of clusters
-fviz_silhouette(res.km) #negative silhouette means that is wrong assigned
-res.km$nbclust # the same (3 clusters)
-res.km
-fviz_cluster(res.km)
+res.km2 <- eclust(df2, "kmeans", nstart = 25) #clustering with factominer, nstart values represents the number of configurations generated
+fviz_gap_stat(res.km2$gap_stat) #best num of clusters
+fviz_silhouette(res.km2) #negative silhouette means that is wrong assigned
+res.km2$nbclust # the same (3 clusters)
+res.km2
+fviz_cluster(res.km2)
 
 ###### Postprocessing - Getting Profiles
 
