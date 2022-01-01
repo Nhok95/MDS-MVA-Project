@@ -10,6 +10,7 @@ library(FactoMineR)
 library(factoextra)
 library(dplyr)
 library(corrplot)
+library(calibrate)
 
 set.seed(123)
 
@@ -52,7 +53,7 @@ bikeDataSet$mout <- factor(bikeDataSet$mout, levels=c("0", "1"), labels=c("NoMOu
 table(bikeDataSet$mout)
 
 # We save the clean dataset as an R object
-save(list=c("bikeDataSet"), file="bikeDataSet.RData")
+# save(list=c("bikeDataSet"), file="bikeDataSet.RData")
 
 ### PCA
 
@@ -61,7 +62,7 @@ load("bikeDataSet.RData")
 
 # We only want the observations which are not considered outliers
 bikeDataSetClean <- bikeDataSet[which(bikeDataSet$mout == "NoMOut"),]
-bikeDataSetClean <- select(bikeDataSetClean,
+bikeDataSetClean <- dplyr::select(bikeDataSetClean,
                            Hour,
                            Month,
                            Year,
@@ -173,5 +174,75 @@ bikeDataSetClean <- bikeDataSet[which(bikeDataSet$mout == "NoMOut"),]
 most_important_individuals_idx <- c(1302, 1306, 1307, 1310, 6461)
 most_important_variables_names <- c("Id", "Temperature", "Dew.Point.Temperature", "Humidity", "Solar.Radiation")
 bikeDataSetClean[most_important_individuals_idx, most_important_variables_names]
-write.csv(bikeDataSetClean[most_important_individuals_idx, most_important_variables_names],"5_most_important_individuals.csv", row.names = TRUE)
+# write.csv(bikeDataSetClean[most_important_individuals_idx, most_important_variables_names],"5_most_important_individuals.csv", row.names = TRUE)
 summary(bikeDataSetClean)
+
+# Latent concepts (interpretation)
+
+# We read the dataset which has the outliers indicated
+load("bikeDataSet.RData")
+
+# We only want the observations which are not considered outliers
+bikeDataSetClean <- bikeDataSet[which(bikeDataSet$mout == "NoMOut"),]
+bikeDataSetClean <- dplyr::select(bikeDataSetClean,
+                                  Hour,
+                                  Month,
+                                  Year,
+                                  Season,
+                                  Functioning.Day,
+                                  Holiday,
+                                  Temperature,
+                                  Humidity,
+                                  Wind.Speed,
+                                  Visibility,
+                                  Dew.Point.Temperature,
+                                  Solar.Radiation,
+                                  Rainfall,
+                                  Snowfall,
+                                  Rented.Bike.Count)
+
+# PCA
+res.pca <- PCA(bikeDataSetClean,
+               scale.unit=TRUE,
+               ncp=10,
+               # "Rented.Bike.Count"
+               quanti.sup=15,
+               # "Hour", "Mont", "Year", "Season", "Holiday", "Functioning.Day"
+               quali.sup=1:6,
+               graph=TRUE)
+
+bikeDataSetClean <- dplyr::select(bikeDataSetClean,
+                                  Temperature,
+                                  Humidity,
+                                  Wind.Speed,
+                                  Visibility,
+                                  Dew.Point.Temperature,
+                                  Solar.Radiation,
+                                  Rainfall,
+                                  Snowfall,
+                                  Rented.Bike.Count)
+N <- nrow(bikeDataSetClean)
+
+# Phi
+nd <- dim(res.pca$var$coord)[2]
+Phi = res.pca$var$coord[,1:nd]
+pc.rot = varimax(Phi)
+pc.rot
+pc.rot$loading
+
+# Data is scaled
+X <- bikeDataSetClean[,-9]
+str(X)
+Xs = scale(X)
+iden = row.names(X)
+etiq = names(X)
+
+p <- dim(pc.rot$loadings)[1]
+Phi.rot = pc.rot$loadings[1:p,]
+
+ze = rep(0, p)
+plot(Phi.rot, type="n", xlim=c(-1,1), ylim=c(-1,1))
+text(Phi.rot, labels=etiq, col="blue")
+arrows(ze, ze, Phi.rot[,1], Phi.rot[,2], length = 0.07, col="blue")
+abline(h=0, v=0, col="gray")
+circle(1)
