@@ -44,13 +44,13 @@ clara.res <- clara(bikeDataSetClean, k, metric = "euclidean", stand = FALSE, sam
 
 # Medoids (clusters obtained)
 clara.res$medoids
-write.csv(clara.res$medoids,"medoids_from_clara.csv", row.names = TRUE)
+#write.csv(clara.res$medoids,"medoids_from_clara.csv", row.names = TRUE)
 
 # Visualize clusters
 fviz_cluster(clara.res, ellipse.type = "t", geom = "point", pointsize = 2.5) +
   theme_bw() +
-  labs(title = "Clustering results from CLARA") +
-  theme(legend.position = "none")
+  labs(title = "Clustering results from CLARA")
+  
 
 ###########################################################################################################
 
@@ -108,49 +108,69 @@ rownames(bikeDataSetClean) = paste(rowlabels, rownames(bikeDataSetClean), sep="-
 ##res.dist <- get_dist(matrix_BDS, method = "pearson") 
 ##fviz_dist(res.dist, lab_size = 8)
 
+res.km <- eclust(bikeDataSetClean, k = 3, "kmeans", nstart = 5)
 
-res.km <- eclust(bikeDataSetClean, k = 3, "kmeans", nstart = 50)
-
-#fviz_gap_stat(res.km$gap_stat) #best num of clusters
-
-fviz_silhouette(res.km) #negative silhouette means that is wrong assigned
+#fviz_silhouette(res.km) 
+fviz_silhouette(clara.res) + 
+  scale_color_hue(l=40, c=35) + 
+  scale_fill_manual(values=c("blue", "green", "red")) #negative silhouette means that is wrong assigned
 
 ###### Postprocessing - Getting Profiles
 
-profiling.results <-data.frame(bikeDataSet.NoMout,res.km$cluster)
-write.csv(profiling.results,"profiling_preliminar_results.csv")
+#profiling.results = data.frame(bikeDataSet.NoMout,clara.res$clustering)
+#write.csv(profiling.results,"profiling_preliminar_results.csv")
 
+plot(table(profiling.results$Season, profiling.results$clara.res.clustering), 
+     col= c("blue","green", "red"),
+     main = "Seasons vs Cluster")
 
-res.km$centers
+final.results = data.frame(bikeDataSetClean,clara.res$clustering)
+names(final.results)[names(final.results) == 'clara.res.clustering'] = 'cluster'
 
+clara.res$medoids
 #### Real centroids
 
-aggregate(bikeDataSetClean,by=list(res.km$cluster),FUN=mean) 
-# Grup 1 seems that represents winter
-# Grup 2 seems that represents autumm-spring (and transition beetween seasons)
-# Grup 3 seems that represents summer
+mean.table = aggregate(bikeDataSetClean,by=list(clara.res$clustering),FUN=mean) 
+# Grup 1 seems to represent winter (cold weather)
+# Grup 2 seems to represent a transition between winter and summer (mild weather)
+# Grup 3 seems to represent summer (warm weather)
 
-aggregate(bikeDataSetClean,by=list(res.km$cluster),FUN=median)
-aggregate(bikeDataSetClean,by=list(res.km$cluster),FUN=sd)
-aggregate(bikeDataSetClean,by=list(res.km$cluster),FUN=IQR) #distance between min and max values (q1 to q3)
+median.table = aggregate(bikeDataSetClean,by=list(clara.res$clustering),FUN=median)
+sd.table = aggregate(bikeDataSetClean,by=list(clara.res$clustering),FUN=sd)
+IQR.table = aggregate(bikeDataSetClean,by=list(clara.res$clustering),FUN=IQR) #distance between min and max values (q1 to q3)
 
 ### Checking Variables
 
 ##Kruskal-Wallis test by rank is a non-parametric alternative to one-way ANOVA test, which extends the two-samples Wilcoxon test in the situation
 ### where there are more than two groups. It's recommended when the assumptions of one-way ANOVA test are not met.
-profiling.results$res.km.cluster<-as.factor(profiling.results$res.km.cluster)
-levels(profiling.results$res.km.cluster)
-profiling.results$res.km.cluster<- ordered(profiling.results$res.km.cluster,levels = c("1", "2", "3"))
+final.results$cluster<-as.factor(final.results$cluster)
+str(final.results)
+levels(final.results$cluster) = c("Winter","Transition","Summer")
+final.results$cluster<- ordered(final.results$cluster,levels = c("Winter", "Transition", "Summer"))
 
-boxplot(results$Temperature~results$res.km.cluster, main= "Temperature")
-boxplot(results$Rented.Bike.Count~results$res.km.cluster, main= "RBC")
+
+
+##https://en.wikipedia.org/wiki/Climate_of_Seoul
+boxplot(final.results$Temperature~final.results$cluster, main= "Temperature")            # No interception (important)
+boxplot(final.results$Humidity~final.results$cluster, main= "Humidity")         
+boxplot(final.results$Wind.Speed~final.results$cluster, main= "Wind Speed")              # No interception (important)
+boxplot(final.results$Visibility~final.results$cluster, main= "Visibility ")
+boxplot(final.results$Dew.Point.Temperature~final.results$cluster, main= "DPTemp")
+boxplot(final.results$Solar.Radiation~final.results$cluster, main= "Solar Radiation")
+boxplot(final.results$Snowfall~final.results$cluster, main= "Snowfall")
+boxplot(final.results$Rented.Bike.Count~final.results$cluster, main= "Rented Bike Count")
+
+kruskal.test(UrbanP ~ res.km.cluster, data = results)
 
 # No interception between medians of boxplots, that means that median are different, the feature murder is important to get
 # profiles inside the cluster. We have to keep this feature in order to get conclusions.
 
+# As the p-value is less than the significance level, we can conclude that there are significant differences between groups in relation to "Temperature".
+kruskal.test(Temperature ~ res.km.cluster, data = results)
 
-kruskal.test(UrbanP ~ res.km.cluster, data = results) # p-vlaue ~ 0, means median for murder is diff from median to other groups
-# As the p-value is less than the significance level 0.05, we can conclude that there are significant differences between groups in relation to "Murder".
+# As the p-value is less than the significance level, we can conclude that there are significant differences between groups in relation to "Humidity".
+kruskal.test(Humidity ~ res.km.cluster, data = results)
+
 
 boxplot(results$Assault~results$res.km.cluster, main= "Assault")
 boxplot(results$UrbanPop~results$res.km.cluster, main= "UrbanPop")
