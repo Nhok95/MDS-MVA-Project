@@ -10,8 +10,7 @@ library(rstudioapi)
 library(mice)
 library(tidyverse)
 library(VIM)
-#library(tibble)
-#library(dplyr)
+library(DMwR2)
 
 ## SETTING WORKSPACE ##
 
@@ -138,6 +137,7 @@ length(which(is.na(bikeDS_imp)))
 
 
 
+
 imp=mice(bikeDataSet ,m=1, maxit = 15)
 bikeDS_imp=complete(imp)
 length(which(is.na(bikeDS_imp)))
@@ -151,37 +151,37 @@ densityplot(imp)
 # As the proportion of NAs in this columns is really slow is hard to get a good distribution. 
 
 par(mfrow=c(2,4))
-#indRBC = which(is.na(impDF$Rented.Bike.Count)); length(indRBC)       
+indRBC = which(is.na(impDF$Rented.Bike.Count)); length(indRBC)       
 plot(density(impDF$Rented.Bike.Count, na.rm = T), lwd=4, col="blue", main="Rented Bike Count")
 lines(density(bikeDS_imp$Rented.Bike.Count), lwd=1, col="red")
 #lines(density(bikeDS_imp$Rented.Bike.Count[indRBC]), lwd=1, col="orange")
 
-#indTemp = which(is.na(impDF$Temperature)); length(indTemp)       
+indTemp = which(is.na(impDF$Temperature)); length(indTemp)       
 plot(density(impDF$Temperature, na.rm = T), lwd=4, col="blue", main="Temperature")
 lines(density(bikeDS_imp$Temperature), lwd=1, col="red")
 #lines(density(bikeDS_imp$Temperature[indTemp]), lwd=1, col="orange")
 
-#indHum = which(is.na(impDF$Humidity)); length(indHum)      
+indHum = which(is.na(impDF$Humidity)); length(indHum)      
 plot(density(impDF$Humidity, na.rm = T), lwd=4, col="blue", main="Humidity")
 lines(density(bikeDS_imp$Humidity), lwd=1, col="red")
 #lines(density(bikeDS_imp$Humidity[indHum]), lwd=1, col="orange")
 
-#indWind = which(is.na(impDF$Wind.Speed)); length(indWind)  
+indWind = which(is.na(impDF$Wind.Speed)); length(indWind)  
 plot(density(impDF$Wind.Speed, na.rm = T), lwd=4, col="blue", main="Wind Speed")
 lines(density(bikeDS_imp$Wind.Speed), lwd=1, col="red")
 #lines(density(bikeDS_imp$Wind.Speed[indWind]), lwd=1, col="orange")
 
-#indVis = which(is.na(impDF$Visibility)); length(indVis)      
+indVis = which(is.na(impDF$Visibility)); length(indVis)      
 plot(density(impDF$Visibility, na.rm = T), lwd=4, col="blue", main="Visibility")
 lines(density(bikeDS_imp$Visibility), lwd=1, col="red")
 #lines(density(bikeDS_imp$Visibility[indVis]), lwd=1, col="orange")
 
-#indDPT = which(is.na(impDF$Dew.Point.Temperature)); length(indDPT)      
+indDPT = which(is.na(impDF$Dew.Point.Temperature)); length(indDPT)      
 plot(density(impDF$Dew.Point.Temperature, na.rm = T), lwd=4, col="blue", main="DPT")
 lines(density(bikeDS_imp$Dew.Point.Temperature), lwd=1, col="red")
 #lines(density(bikeDS_imp$Dew.Point.Temperature[indDPT]), lwd=1, col="orange")
 
-#indRain = which(is.na(impDF$Rainfall)); length(indRain)     
+indRain = which(is.na(impDF$Rainfall)); length(indRain)     
 plot(density(impDF$Rainfall, na.rm = T), lwd=4, col="blue", main="Rainfall")
 lines(density(bikeDS_imp$Rainfall), lwd=1, col="red")
 #lines(density(bikeDS_imp$Rainfall[indRain]), lwd=1, col="orange")
@@ -197,25 +197,15 @@ par(mfrow=c(1,1))
 #length(which(is.na(bikeDataSet))) #61
 
 
-# We are going to try with knn
-impDF = bikeDataSet[,c(6:16)]
+# knn approach
+#impDF = bikeDataSet[,c(6:16)]
 
-impknn = knnImputation(impDF, k=5) # k-nearest neightbors
-length(which(is.na(impknn)))
+#impknn = knnImputation(impDF, k=5) # k-nearest neightbors
+#length(which(is.na(impknn)))
 
-summary(impknn)
-summary(impDF)
+#summary(impknn)
+#summary(impDF)
 
-plot(density(impDF$Temperature, na.rm = T))
-lines(density(impknn$Temperature), col="red")
-
-plot(density(impDF$Temperature, na.rm = T))
-lines(density(impknn$Temperature[indTemp]), col="red")
-
-
-dd[mis_ind>0,]
-dd_imp_knn[mis_ind>0,]
-dd_imp_knn2[mis_ind>0,]
 
 
 write.table(bikeDS_imp2, file = "SeoulBikeData_FirstImp.csv", quote = FALSE, 
