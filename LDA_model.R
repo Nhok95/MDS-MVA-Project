@@ -85,7 +85,7 @@ normalizedDF = bikeDS.Clean
 plot(density(normalizedDF$Temperature))
 skewness(bikeDS.Clean$Temperature) #-0.191
 
-#temp.norm = bestNormalize(normalizedDF$Temperature)
+temp.norm = bestNormalize(normalizedDF$Temperature)
 plot(density(temp.norm$x.t))
 skewness(temp.norm$x.t) # 3.07e-05
 
@@ -119,17 +119,10 @@ kable(tidyBDS.norm %>% group_by(Rented.Bike.Count, variable) %>% summarise(p_val
 load("bikeDataSet_train.RData")
 load("bikeDataSet_test.RData")
 
-#Train.Clean = dplyr::select(bikeDataSet_train, 
-#                            -c("Id","Day","Month","Year","Date","Hour","Season","Holiday","Functioning.Day"))
-
-
 Train.Clean = dplyr::select(bikeDataSet_train, 
                             -c("Id","Day","Month","Year"))
 Test.Clean = dplyr::select(bikeDataSet_test, 
                            -c("Id","Day","Month","Year"))
-
-#Train.Clean = dplyr::select(bikeDataSet_train, -c("Id","Day","Month","Year", "Dew.Point.Temperature"))
-#Test.Clean = dplyr::select(bikeDataSet_test, -c("Id","Day","Month","Year", "Dew.Point.Temperature"))
 
 
 Train.Clean$Rented.Bike.Count = cut(Train.Clean$Rented.Bike.Count,
@@ -157,8 +150,6 @@ model
 lda.data <- cbind(train.transformed, predict(model)$x)
 ggplot(lda.data, aes(LD1, LD2)) + geom_point(aes(color = Rented.Bike.Count))
 
-#library(plotly)
-#scatter3D(lda.data$LD1,lda.data$LD2,lda.data$LD3, clab= lda.data$Rented.Bike.Count)
 predictions.train <- model %>% predict(train.transformed)
 dataset = data.frame(Y = train.transformed$Rented.Bike.Count, lda = predictions.train$x)
 
