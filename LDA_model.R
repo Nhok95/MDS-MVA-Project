@@ -14,6 +14,10 @@ library(MASS)
 library(mda)
 library(klaR)
 
+library(plotly) #3d plot
+library(moments) #skewness
+library(bestNormalize) #BestNormalize function
+
 rm(list=ls(all=TRUE))
 set.seed(123)
 
@@ -40,10 +44,14 @@ bikeDS.Clean$Rented.Bike.Count <- cut(bikeDS.Clean$Rented.Bike.Count,
                                       breaks = c(RBC.q$min, RBC.q$q1, RBC.q$q2, RBC.q$q3, RBC.q$max),
                                       include.lowest = TRUE)
 levels(bikeDS.Clean$Rented.Bike.Count) = c("low", "mid", "high", "very high")
+table(bikeDS.Clean$Rented.Bike.Count)
 
 
 # Testing Gaussian conditions with Shapiro-Wilk test for each variable
-tidyBDS <- melt(bikeDS.Clean, value.name = "value")
+num_col = unlist(lapply(bikeDS.Clean, is.numeric))
+
+tidyBDS <- melt(bikeDS.Clean,
+                value.name = "value")
 #kable(head(bikeDS.Clean, n = 3))
 kable(tidyBDS %>% group_by(Rented.Bike.Count, variable) %>% summarise(p_value_Shapiro.test = round(shapiro.test(value)$p.value,5)))
 
@@ -51,8 +59,6 @@ kable(tidyBDS %>% group_by(Rented.Bike.Count, variable) %>% summarise(p_value_Sh
 ## COND 1: Features need to have Gaussian Density [NOT OK]
 
 # Checking for Multivariate Gaussian Conditions (Royston test and/or Henze-Zirkler test)
-
-num_col = unlist(lapply(bikeDS.Clean, is.numeric))
 
 sample.values = sample(1:nrow(bikeDS.Clean),2000)
 DS.sample = bikeDS.Clean[sample.values,]
@@ -63,13 +69,50 @@ royston_test$multivariateNormality # MVN NO
 hz_test <- mvn(data = bikeDS.Clean[num_col], mvnTest = "hz")
 hz_test$multivariateNormality # MVN NO
 
-## COND 2: NOT OK
+## COND 2: Multidimensional Gaussian Density [NOT OK]
 
 # Covariance Conditions
 
 boxM(data = bikeDS.Clean[num_col], grouping = bikeDS.Clean[,2])
 
-## COND 3: [NOT OK]
+## COND 3: Covariance/Variance [NOT OK]
+
+
+### Normalizing
+
+normalizedDF = bikeDS.Clean
+
+plot(density(normalizedDF$Temperature))
+skewness(bikeDS.Clean$Temperature) #-0.191
+
+#temp.norm = bestNormalize(normalizedDF$Temperature)
+plot(density(temp.norm$x.t))
+skewness(temp.norm$x.t) # 3.07e-05
+
+
+df.low = normalizedDF[which(normalizedDF$Rented.Bike.Count == "low"),]
+df.mid = normalizedDF[which(normalizedDF$Rented.Bike.Count == "mid"),]
+df.high = normalizedDF[which(normalizedDF$Rented.Bike.Count == "high"),]
+df.vhigh = normalizedDF[which(normalizedDF$Rented.Bike.Count == "very high"),]
+
+df.low[num_col] = unlist(lapply(df.low[num_col], function(x) bestNormalize(x)$x.t))
+df.mid[num_col] = unlist(lapply(df.mid[num_col], function(x) bestNormalize(x)$x.t))
+df.high[num_col] = unlist(lapply(df.high[num_col], function(x) bestNormalize(x)$x.t))
+
+num_col2 = num_col
+num_col2[11] = F
+df.vhigh[num_col2] = unlist(lapply(df.vhigh[num_col2], function(x) bestNormalize(x)$x.t))
+
+#df.vhigh$Snowfall = bestNormalize(df.vhigh$Snowfall)$x.t #Error (all values minus 1 are 0)
+
+normalizedDF = rbind(df.low,df.mid,df.high,df.vhigh)
+
+tidyBDS.norm <- melt(normalizedDF, value.name = "value") 
+kable(tidyBDS.norm %>% group_by(Rented.Bike.Count, variable) %>% summarise(p_value_Shapiro.test = round(shapiro.test(value)$p.value,5)))
+
+# Still we can't reach normality
+
+
 
 ##### MODEL ######
 ##Step1: Split Data
@@ -78,6 +121,8 @@ load("bikeDataSet_test.RData")
 
 #Train.Clean = dplyr::select(bikeDataSet_train, 
 #                            -c("Id","Day","Month","Year","Date","Hour","Season","Holiday","Functioning.Day"))
+
+
 Train.Clean = dplyr::select(bikeDataSet_train, 
                             -c("Id","Day","Month","Year"))
 Test.Clean = dplyr::select(bikeDataSet_test, 
@@ -109,42 +154,72 @@ test.transformed = preproc.param %>% predict(Test.Clean)
 model <- lda(Rented.Bike.Count~., data = train.transformed)
 model
 
-#plot(model)
-
-#p = predict(model, train.transformed)
-#ldahist(data= p$x[,1], g = train.transformed$Rented.Bike.Count)
-#ldahist(data= p$x[,2], g = train.transformed$Rented.Bike.Count)
-#ldahist(data= p$x[,3], g = train.transformed$Rented.Bike.Count)
-
-#partimat(Rented.Bike.Count~., data= test.transformed, method="lda")
-
-##Step 3. Make predictions
-
-predictions <- model %>% predict(test.transformed)
-
-head(predictions$posterior, 6)  
-tail(predictions$posterior, 6)
-
 lda.data <- cbind(train.transformed, predict(model)$x)
 ggplot(lda.data, aes(LD1, LD2)) + geom_point(aes(color = Rented.Bike.Count))
 
-#library("plot3D")
+#library(plotly)
 #scatter3D(lda.data$LD1,lda.data$LD2,lda.data$LD3, clab= lda.data$Rented.Bike.Count)
+predictions.train <- model %>% predict(train.transformed)
+dataset = data.frame(Y = train.transformed$Rented.Bike.Count, lda = predictions.train$x)
+
+plot_ly(dataset, x = ~lda.LD1, y = ~lda.LD2, z = ~lda.LD3, color = ~Y, colors = c('red', 'green', 'blue', 'purple')) %>%
+  add_markers() %>%
+  layout(scene = list(xaxis = list(title = 'LD1'),
+                      yaxis = list(title = 'LD2'),
+                      zaxis = list(title = 'LD3')))
+
+##Step 3. Make predictions
+predictions <- model %>% predict(test.transformed)
+
+#head(predictions$posterior, 6)  
+#tail(predictions$posterior, 6)
 
 # Confusion matrix is the most important tool to evaluate
-mean(predictions$class==test.transformed$Rented.Bike.Count) # Evaluation ()
-table(test.transformed$Rented.Bike.Count, predictions$class, dnn = c("Actual Class", "Predicted Class"))
+mean(predictions$class==test.transformed$Rented.Bike.Count) #73.51%
+res.table = table(test.transformed$Rented.Bike.Count, predictions$class, 
+                  dnn = c("Actual Class", "Predicted Class")); res.table
 Error <- mean(test.transformed$Rented.Bike.Count != predictions$class) * 100; Error
 
-###########EXTRA QDA 
-#### QDA is useful when Covariance condition (LDA) is not possible. It is more flexible than LDA (high bias if conditions are not met), but risky in terms of variance (higher than LDA)
-#### LDA for small datasets and QDA for large datasets.
+neighbours.errors = 147+90+100+83+144+95
+total.errors = sum(res.table) - sum(diag(res.table))
+round(neighbours.errors/total.errors*100,2) #96.35% of errors comes from neighbouring clusters
+
+
+###########EXTRA 
 
 # Fit the model
-model.rda = rda(Rented.Bike.Count~., data = train.transformed)
+Train.Clean2 = dplyr::select(Train.Clean, -c("Date"))
+Test.Clean2 = dplyr::select(Test.Clean, -c("Date"))
+preproc.param2 = Train.Clean2 %>%preProcess(method = c("center", "scale")) #scale data 
+# Transform the data using the estimated parameters
+train.transformed2 = preproc.param2 %>% predict(Train.Clean2)
+test.transformed2 = preproc.param2 %>% predict(Test.Clean2)
+
+
+##### Mixture discriminant analysis - MDA
+model.mda = mda(Rented.Bike.Count~., data = train.transformed2)
+model.mda
+# Make predictions
+predictions.mda = model.mda %>% predict(test.transformed2)
+# Model accuracy
+mean(predictions.mda == test.transformed2$Rented.Bike.Count)*100 #72.78%
+table(test.transformed$Rented.Bike.Count, predictions.mda, dnn = c("Actual Class", "Predicted Class"))
+
+
+##### Flexible discriminant analysis - FDA
+model.fda = mda(Rented.Bike.Count~., data = train.transformed2)
+model.fda
+# Make predictions
+predictions.fda = model.fda %>% predict(test.transformed2)
+# Model accuracy
+mean(predictions.fda == test.transformed2$Rented.Bike.Count)*100 #72.97%
+table(test.transformed$Rented.Bike.Count, predictions.fda, dnn = c("Actual Class", "Predicted Class"))
+
+##### Regularized discriminant analysis - RDA
+model.rda = mda(Rented.Bike.Count~., data = train.transformed2)
 model.rda
 # Make predictions
-predictions.rda = model.rda %>% predict(test.transformed)
+predictions.rda = model.rda %>% predict(test.transformed2)
 # Model accuracy
-mean(predictions.rda$class == test.transformed$Rented.Bike.Count)
-table(test.transformed$Rented.Bike.Count, predictions.rda$class, dnn = c("Actual Class", "Predicted Class"))
+mean(predictions.rda == test.transformed2$Rented.Bike.Count)*100 #72.94%
+table(test.transformed$Rented.Bike.Count, predictions.fda, dnn = c("Actual Class", "Predicted Class"))
