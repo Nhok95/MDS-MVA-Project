@@ -29,8 +29,8 @@ x_train <- bikeDataSet_train %>% select(-one_of(undesired))
 y_train <- bikeDataSet_train[, "Rented.Bike.Count"]
 x_test <- bikeDataSet_test %>% select(-one_of(undesired))
 y_test <- bikeDataSet_test[, "Rented.Bike.Count"]
-str(bikeDataSet_train)
-str(bikeDataSet_test)
+# str(bikeDataSet_train)
+# str(bikeDataSet_test)
 
 ### Model1: Regression Trees
 
