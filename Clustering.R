@@ -4,9 +4,12 @@
 
 library(cluster)
 library(factoextra)
+library(FactoMineR)
 library(rstudioapi)
 library(dplyr)
 library(stringr)
+library(gridExtra)
+library(grid)
 
 rm(list=ls(all=TRUE))
 set.seed(123)
@@ -19,6 +22,7 @@ load("bikeDataSet.RData")
 
 # Select observations from numerical features which are not considered outliers
 bikeDataSet.NoMout <- bikeDataSet[which(bikeDataSet$mout == "NoMOut"),]
+bikeDataSet.NoMout = select(bikeDataSet.NoMout, -c("mout"))
 bikeDataSetClean <- select(bikeDataSet.NoMout,
                            Temperature,
                            Humidity,
@@ -33,6 +37,7 @@ N <- nrow(bikeDataSetClean)
 str(bikeDataSetClean)
 
 # Scale the dataset since we have different units in each numerical feature
+dfClean = bikeDataSetClean
 bikeDataSetClean <- scale(bikeDataSetClean)
 
 # Obtain the optimal value of k
@@ -90,26 +95,10 @@ for (i in 1:length(seasons)) {
 ##            Profiling            ##
 #####################################
 
-
-#bikeDataSetClean = select(bikeDataSet, -c("Id"))
-
-#bikeDataSetClean$Hour = as.numeric(bikeDataSetClean$Hour)
 rowlabels = bikeDataSet.NoMout$Season
 rownames(bikeDataSetClean) = paste(rowlabels, rownames(bikeDataSetClean), sep="-")
 
-#num_col = unlist(lapply(bikeDataSetClean, is.numeric))
-#df = bikeDataSetClean[, num_col]
-#df = scale(bikeDataSetClean[, num_col]) # x - mean / sd
-#head(df)
-
-## Error in rowSums(as.matrix(ok)) : 
-## 'Calloc' could not allocate memory (74114881 of 16 bytes)
-##matrix_BDS = data.matrix(df) # get a matrix version
-##res.dist <- get_dist(matrix_BDS, method = "pearson") 
-##fviz_dist(res.dist, lab_size = 8)
-
-res.km <- eclust(bikeDataSetClean, k = 3, "kmeans", nstart = 5)
-
+#res.km <- eclust(bikeDataSetClean, k = 3, "kmeans", nstart = 5)
 #fviz_silhouette(res.km) 
 fviz_silhouette(clara.res) + 
   scale_color_hue(l=40, c=35) + 
@@ -117,72 +106,164 @@ fviz_silhouette(clara.res) +
 
 ###### Postprocessing - Getting Profiles
 
-#profiling.results = data.frame(bikeDataSet.NoMout,clara.res$clustering)
+results = data.frame(bikeDataSet.NoMout,clara.res$clustering)
 #write.csv(profiling.results,"profiling_preliminar_results.csv")
 
-plot(table(profiling.results$Season, profiling.results$clara.res.clustering), 
+plot(table(results$Season, results$clara.res.clustering), 
      col= c("blue","green", "red"),
      main = "Seasons vs Cluster")
 
-final.results = data.frame(bikeDataSetClean,clara.res$clustering)
-names(final.results)[names(final.results) == 'clara.res.clustering'] = 'cluster'
+names(results)[names(results) == 'clara.res.clustering'] = 'cluster'
 
 clara.res$medoids
+
 #### Real centroids
 
-mean.table = aggregate(bikeDataSetClean,by=list(clara.res$clustering),FUN=mean) 
+mean.table = aggregate(dfClean,by=list(clara.res$clustering),FUN= function(x) round(mean(x),1)); 
+mean.table = mean.table[2:10]; mean.table
+grid.newpage()
+grid.table(mean.table)
 # Grup 1 seems to represent winter (cold weather)
 # Grup 2 seems to represent a transition between winter and summer (mild weather)
 # Grup 3 seems to represent summer (warm weather)
 
-median.table = aggregate(bikeDataSetClean,by=list(clara.res$clustering),FUN=median)
-sd.table = aggregate(bikeDataSetClean,by=list(clara.res$clustering),FUN=sd)
-IQR.table = aggregate(bikeDataSetClean,by=list(clara.res$clustering),FUN=IQR) #distance between min and max values (q1 to q3)
+median.table = aggregate(dfClean,by=list(clara.res$clustering),FUN=median); 
+median.table = median.table[2:10]; median.table
+grid.newpage()
+grid.table(median.table)
+
+sd.table = aggregate(dfClean,by=list(clara.res$clustering),FUN=function(x) round(sd(x),1)); 
+sd.table = sd.table[2:10]; sd.table
+grid.newpage()
+grid.table(sd.table)
+
+#distance between min and max values (q1 to q3)
+IQR.table = aggregate(dfClean,by=list(clara.res$clustering),FUN=IQR); 
+IQR.table = IQR.table[2:10]; IQR.table
+grid.newpage()
+grid.table(IQR.table)
 
 ### Checking Variables
 
 ##Kruskal-Wallis test by rank is a non-parametric alternative to one-way ANOVA test, which extends the two-samples Wilcoxon test in the situation
 ### where there are more than two groups. It's recommended when the assumptions of one-way ANOVA test are not met.
-final.results$cluster<-as.factor(final.results$cluster)
-str(final.results)
-levels(final.results$cluster) = c("Winter","Transition","Summer")
-final.results$cluster<- ordered(final.results$cluster,levels = c("Winter", "Transition", "Summer"))
+results$cluster<-as.factor(results$cluster)
+str(results)
+levels(results$cluster) = c("Cold","Mild","Warm")
+results$cluster<- ordered(results$cluster,levels = c("Cold","Mild","Warm"))
 
 
 
 ##https://en.wikipedia.org/wiki/Climate_of_Seoul
-boxplot(final.results$Temperature~final.results$cluster, main= "Temperature")            # No interception (important)
-boxplot(final.results$Humidity~final.results$cluster, main= "Humidity")         
-boxplot(final.results$Wind.Speed~final.results$cluster, main= "Wind Speed")              # No interception (important)
-boxplot(final.results$Visibility~final.results$cluster, main= "Visibility ")
-boxplot(final.results$Dew.Point.Temperature~final.results$cluster, main= "DPTemp")
-boxplot(final.results$Solar.Radiation~final.results$cluster, main= "Solar Radiation")
-boxplot(final.results$Snowfall~final.results$cluster, main= "Snowfall")
-boxplot(final.results$Rented.Bike.Count~final.results$cluster, main= "Rented Bike Count")
-
-kruskal.test(UrbanP ~ res.km.cluster, data = results)
-
-# No interception between medians of boxplots, that means that median are different, the feature murder is important to get
-# profiles inside the cluster. We have to keep this feature in order to get conclusions.
-
-# As the p-value is less than the significance level, we can conclude that there are significant differences between groups in relation to "Temperature".
-kruskal.test(Temperature ~ res.km.cluster, data = results)
-
-# As the p-value is less than the significance level, we can conclude that there are significant differences between groups in relation to "Humidity".
-kruskal.test(Humidity ~ res.km.cluster, data = results)
+boxplot(results$Temperature~results$cluster, main= "Temperature")
+boxplot(results$Humidity~results$cluster, main= "Humidity")         
+boxplot(results$Wind.Speed~results$cluster, main= "Wind Speed")
+boxplot(results$Visibility~results$cluster, main= "Visibility")
+boxplot(results$Dew.Point.Temperature~results$cluster, main= "DPTemp")
+boxplot(results$Solar.Radiation~results$cluster, main= "Solar Radiation")
+boxplot(results$Rainfall~results$cluster, main= "Rainfall")
+boxplot(results$Snowfall~results$cluster, main= "Snowfall")
 
 
-boxplot(results$Assault~results$res.km.cluster, main= "Assault")
-boxplot(results$UrbanPop~results$res.km.cluster, main= "UrbanPop")
-
-kruskal.test(UrbanPop ~ res.km.cluster, data = results) # p-value = 0.0004, close to 0.05 but still below
+# As the p-value is less than the significance level in all test, 
+# we can conclude that there are significant differences between groups in all our numerical variables
+kruskal.test(Temperature ~ cluster, data = results) 
+kruskal.test(Humidity ~ cluster, data = results) 
+kruskal.test(Wind.Speed ~ cluster, data = results)
+kruskal.test(Visibility ~ cluster, data = results)
+kruskal.test(Dew.Point.Temperature ~ cluster, data = results)
+kruskal.test(Solar.Radiation ~ cluster, data = results)
+kruskal.test(Rainfall ~ cluster, data = results)
+kruskal.test(Snowfall ~ cluster, data = results)
 
 #From the output of the Kruskal-Wallis test, we know that there is a significant difference between groups, but we don't know which pairs of groups are different.
-
-pairwise.wilcox.test(results$Murder, results$res.km.cluster, p.adjust.method = "BH") #M1 <> M2 <> M3
+#Cold <> Mild <> Warm in all test
+pairwise.wilcox.test(results$Temperature, results$cluster, p.adjust.method = "BH") 
+pairwise.wilcox.test(results$Humidity, results$cluster, p.adjust.method = "BH")
+pairwise.wilcox.test(results$Wind.Speed, results$cluster, p.adjust.method = "BH")
+pairwise.wilcox.test(results$Visibility, results$cluster, p.adjust.method = "BH")
+pairwise.wilcox.test(results$Dew.Point.Temperature, results$cluster, p.adjust.method = "BH")
+pairwise.wilcox.test(results$Solar.Radiation, results$cluster, p.adjust.method = "BH")
+pairwise.wilcox.test(results$Rainfall, results$cluster, p.adjust.method = "BH")
+pairwise.wilcox.test(results$Snowfall, results$cluster, p.adjust.method = "BH")
 # Warning cause we can't compute one with themself
 
-### For Normal or T-student features, please use Arturo's notes. For categorical variables, please use Chi-squared Test. R functin "catdes"
+results.sub = select(results, -c("Id","Year", "Date"))
 
-### Additional graphs could be done to interpret your profiles by using your csv file in Excel.
+length(results.sub)
+catdes.res = catdes(results.sub, length(results.sub))
+catdes.res$test.chi2
+grid.newpage()
+grid.table(catdes.res$test.chi2)
 
+Cold.Cat = as.data.frame(catdes.res$category$Cold)
+Cold.Cat[which(Cold.Cat$v.test > 0),]
+
+
+Mild.Cat = as.data.frame(catdes.res$category$Mild)
+Mild.Cat[which(Mild.Cat$v.test > 0),]
+
+
+Warm.Cat = as.data.frame(catdes.res$category$Warm)
+Warm.Cat[which(Warm.Cat$v.test > 0),]
+
+catdes.res$quanti.var # Eta Squared = SS_effect / SS_total -> sumSq(cat_var) / sumSq(cat_var)+sumSq(residuals) aov
+catdes.res$quanti.var[,1] = round(catdes.res$quanti.var[,1], 3)
+grid.newpage()
+grid.table(catdes.res$quanti.var)
+
+Cold.Quanti = catdes.res$quanti$Cold
+Cold.Quanti[,c(2,3,4,5)] = round(Cold.Quanti[,c(2,3,4,5)],2)
+
+Mild.Quanti = catdes.res$quanti$Mild
+Mild.Quanti[,c(2,3,4,5)] = round(Mild.Quanti[,c(2,3,4,5)],2)
+
+Warm.Quanti = catdes.res$quanti$Warm
+Warm.Quanti[,c(2,3,4,5)] = round(Warm.Quanti[,c(2,3,4,5)],2)
+
+Cold.Quanti
+Mild.Quanti
+Warm.Quanti
+
+#45.57% of the Summer season belongs to Warm
+
+grid.newpage()
+grid.table(catdes.res$category)
+
+catdes.res$quanti.var
+catdes.res$quanti
+#For categorical variables, please use Chi-squared Test. R functin "catdes"
+
+#####################################
+##        Target Profiling         ##
+#####################################
+
+index = which(names(results.sub) == "Rented.Bike.Count")
+condes.res = condes(results.sub, index)
+condes.res$quanti
+condes.res$quanti[,1] = round(condes.res$quanti[,1], 3)
+grid.newpage()
+grid.table(condes.res$quanti)
+
+# R2 = SumSq(variable) / (sumSq(variable)+sumSq(residuals)) #residuals = unexplained variance
+# R2 = 1 - (SumSQ(residuald) / (sumSq(variable)+sumSq(residuals))) 
+condes.res$quali 
+condes.res$quali[,1] = round(condes.res$quali[,1], 3)
+grid.newpage()
+grid.table(condes.res$quali)
+
+
+#Estimate of linear regression (target~category)
+condes.res$category
+condes.res$category[,1] = round(condes.res$category[,1], 3)
+
+index.list = c(1,2,5,12,19,29,37,41,42,43)
+condes.res.cat.1 = condes.res$category[index.list,]
+grid.newpage()
+grid.table(condes.res.cat.1)
+
+condes.res.cat.2 = condes.res$category[-index.list,]
+condes.res.cat.2 =condes.res.cat.2[which(condes.res.cat.2[,1] > 250 | 
+                                         condes.res.cat.2[,1] < -250),]
+grid.newpage()
+grid.table(condes.res.cat.2)
