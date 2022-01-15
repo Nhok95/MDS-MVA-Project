@@ -98,8 +98,6 @@ for (i in 1:length(seasons)) {
 rowlabels = bikeDataSet.NoMout$Season
 rownames(bikeDataSetClean) = paste(rowlabels, rownames(bikeDataSetClean), sep="-")
 
-#res.km <- eclust(bikeDataSetClean, k = 3, "kmeans", nstart = 5)
-#fviz_silhouette(res.km) 
 fviz_silhouette(clara.res) + 
   scale_color_hue(l=40, c=35) + 
   scale_fill_manual(values=c("blue", "green", "red")) #negative silhouette means that is wrong assigned
@@ -153,7 +151,6 @@ levels(results$cluster) = c("Cold","Mild","Warm")
 results$cluster<- ordered(results$cluster,levels = c("Cold","Mild","Warm"))
 
 
-
 ##https://en.wikipedia.org/wiki/Climate_of_Seoul
 boxplot(results$Temperature~results$cluster, main= "Temperature")
 boxplot(results$Humidity~results$cluster, main= "Humidity")         
@@ -186,7 +183,6 @@ pairwise.wilcox.test(results$Dew.Point.Temperature, results$cluster, p.adjust.me
 pairwise.wilcox.test(results$Solar.Radiation, results$cluster, p.adjust.method = "BH")
 pairwise.wilcox.test(results$Rainfall, results$cluster, p.adjust.method = "BH")
 pairwise.wilcox.test(results$Snowfall, results$cluster, p.adjust.method = "BH")
-# Warning cause we can't compute one with themself
 
 results.sub = select(results, -c("Id","Year", "Date"))
 
@@ -207,7 +203,7 @@ Mild.Cat[which(Mild.Cat$v.test > 0),]
 Warm.Cat = as.data.frame(catdes.res$category$Warm)
 Warm.Cat[which(Warm.Cat$v.test > 0),]
 
-catdes.res$quanti.var # Eta Squared = SS_effect / SS_total -> sumSq(cat_var) / sumSq(cat_var)+sumSq(residuals) aov
+catdes.res$quanti.var
 catdes.res$quanti.var[,1] = round(catdes.res$quanti.var[,1], 3)
 grid.newpage()
 grid.table(catdes.res$quanti.var)
@@ -224,8 +220,6 @@ Warm.Quanti[,c(2,3,4,5)] = round(Warm.Quanti[,c(2,3,4,5)],2)
 Cold.Quanti
 Mild.Quanti
 Warm.Quanti
-
-#45.57% of the Summer season belongs to Warm
 
 grid.newpage()
 grid.table(catdes.res$category)
@@ -245,8 +239,6 @@ condes.res$quanti[,1] = round(condes.res$quanti[,1], 3)
 grid.newpage()
 grid.table(condes.res$quanti)
 
-# R2 = SumSq(variable) / (sumSq(variable)+sumSq(residuals)) #residuals = unexplained variance
-# R2 = 1 - (SumSQ(residuald) / (sumSq(variable)+sumSq(residuals))) 
 condes.res$quali 
 condes.res$quali[,1] = round(condes.res$quali[,1], 3)
 grid.newpage()

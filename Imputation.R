@@ -189,24 +189,5 @@ lines(density(bikeDS_imp$Rainfall), lwd=1, col="red")
 
 par(mfrow=c(1,1))
 
-
-#bikeDataSet$Rented.Bike.Count <- bikeDS_imp$Rented.Bike.Count
-#bikeDataSet$Wind.Speed <- bikeDS_imp$Wind.Speed
-#bikeDataSet$Rainfall <- bikeDS_imp$Rainfall
-
-#length(which(is.na(bikeDataSet))) #61
-
-
-# knn approach
-#impDF = bikeDataSet[,c(6:16)]
-
-#impknn = knnImputation(impDF, k=5) # k-nearest neightbors
-#length(which(is.na(impknn)))
-
-#summary(impknn)
-#summary(impDF)
-
-
-
 write.table(bikeDS_imp2, file = "SeoulBikeData_FirstImp.csv", quote = FALSE, 
             sep = ",", na = "NA", dec = ".", row.names = FALSE, col.names = TRUE)
